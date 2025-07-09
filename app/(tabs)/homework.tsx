@@ -1,260 +1,68 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  SafeAreaView,
-  Alert,
-  Image,
-  ActivityIndicator,
-} from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, SafeAreaView, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Camera, Send, Upload, BookOpen } from 'lucide-react-native';
-import { CameraView, useCameraPermissions } from 'expo-camera';
-import * as ImagePicker from 'expo-image-picker';
-import IQSlider from '../../components/IQSlider';
-import { generateHomeworkHelp, HomeworkAnalysis } from '@/lib/gemini';
+import { GraduationCap, Clock, Brain, Target } from 'lucide-react-native';
 
-export default function HomeworkPalScreen() {
-  const [input, setInput] = useState('');
-  const [iqLevel, setIqLevel] = useState(120); // Default to mid-range
-  const [analysis, setAnalysis] = useState<HomeworkAnalysis | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [showCamera, setShowCamera] = useState(false);
-  const [permission, requestPermission] = useCameraPermissions();
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
-
-  const handleAnalyze = async () => {
-    if (!input.trim() && !selectedImage) {
-      Alert.alert('Input Required', 'Please enter a homework question or upload an image to get help.');
-      return;
-    }
-
-    setLoading(true);
-    setAnalysis(null);
-    try {
-      const result = await generateHomeworkHelp(input, iqLevel, selectedImage || undefined);
-      setAnalysis(result);
-    } catch (error) {
-      console.error(error);
-      Alert.alert('Analysis Failed', 'Could not analyze your homework. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCameraPress = async () => {
-    if (!permission?.granted) {
-      const result = await requestPermission();
-      if (!result.granted) {
-        Alert.alert('Permission Required', 'Camera permission is needed to capture homework images');
-        return;
-      }
-    }
-    setShowCamera(true);
-  };
-
-  const handleImagePicker = async () => {
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    
-    if (permissionResult.granted === false) {
-      Alert.alert('Permission Required', 'Permission to access camera roll is required!');
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
-
-    if (!result.canceled) {
-      setSelectedImage(result.assets[0].uri);
-      setInput('Image uploaded for homework help');
-    }
-  };
-
-  const clearImage = () => {
-    setSelectedImage(null);
-    if (input === 'Image uploaded for homework help') {
-      setInput('');
-    }
-  };
-
-  if (showCamera) {
-    return (
-      <View style={styles.cameraContainer}>
-        <CameraView style={styles.camera} facing="back">
-          <View style={styles.cameraOverlay}>
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => setShowCamera(false)}
-            >
-              <Text style={styles.closeButtonText}>✕</Text>
-            </TouchableOpacity>
-            <View style={styles.cameraControls}>
-              <TouchableOpacity style={styles.captureButton}>
-                <View style={styles.captureButtonInner} />
-              </TouchableOpacity>
-            </View>
-          </View>
-        </CameraView>
-      </View>
-    );
-  }
-
+export default function StudyPalScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <LinearGradient
-        colors={['#43e97b', '#38f9d7']}
+        colors={['#667eea', '#764ba2']}
         style={styles.header}
       >
-        <Text style={styles.headerIcon}>📚</Text>
-        <Text style={styles.title}>Homework Pal</Text>
-        <Text style={styles.subtitle}>Your intelligent homework companion</Text>
+        <Text style={styles.headerIcon}>🎓</Text>
+        <Text style={styles.title}>Study Pal</Text>
+        <Text style={styles.subtitle}>Your interactive study companion</Text>
       </LinearGradient>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.inputSection}>
-          <Text style={styles.sectionTitle}>What homework needs help?</Text>
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Enter your homework question or problem..."
-              placeholderTextColor="#999"
-              value={input}
-              onChangeText={setInput}
-              multiline
-              maxLength={1000}
-            />
-            <View style={styles.inputActions}>
-              {selectedImage && (
-                <View style={styles.imagePreview}>
-                  <Image source={{ uri: selectedImage }} style={styles.previewImage} />
-                  <TouchableOpacity style={styles.clearImageButton} onPress={clearImage}>
-                    <Text style={styles.clearImageText}>✕</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-              <View style={styles.actionButtons}>
-                <TouchableOpacity
-                  style={styles.imageButton}
-                  onPress={handleImagePicker}
-                >
-                  <Upload size={20} color="#666" />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.cameraButton}
-                  onPress={handleCameraPress}
-                >
-                  <Camera size={20} color="#666" />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.analyzeButton, loading && styles.analyzeButtonDisabled]}
-                  onPress={handleAnalyze}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <ActivityIndicator color="white" />
-                  ) : (
-                    <>
-                      <Send size={16} color="white" />
-                      <Text style={styles.analyzeButtonText}>Get Help</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              </View>
+      <View style={styles.content}>
+        <Image
+          source={{ uri: 'https://images.pexels.com/photos/159711/books-bookstore-book-reading-159711.jpeg?auto=compress&cs=tinysrgb&w=800' }}
+          style={styles.heroImage}
+        />
+        
+        <View style={styles.comingSoonCard}>
+          <Text style={styles.comingSoonTitle}>Coming Soon!</Text>
+          <Text style={styles.comingSoonText}>
+            Study Pal will help you master any subject with personalized study sessions, 
+            interactive quizzes, and motivational check-ins.
+          </Text>
+        </View>
+
+        <View style={styles.featuresContainer}>
+          <Text style={styles.featuresTitle}>Planned Features</Text>
+          
+          <View style={styles.featureItem}>
+            <Clock size={24} color="#667eea" />
+            <View style={styles.featureText}>
+              <Text style={styles.featureTitle}>Smart Check-ins</Text>
+              <Text style={styles.featureDescription}>
+                Customizable study intervals with motivational reminders
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.featureItem}>
+            <Brain size={24} color="#667eea" />
+            <View style={styles.featureText}>
+              <Text style={styles.featureTitle}>AI-Generated Quizzes</Text>
+              <Text style={styles.featureDescription}>
+                Personalized quizzes based on your study material
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.featureItem}>
+            <Target size={24} color="#667eea" />
+            <View style={styles.featureText}>
+              <Text style={styles.featureTitle}>Progress Tracking</Text>
+              <Text style={styles.featureDescription}>
+                Monitor your learning progress and achievements
+              </Text>
             </View>
           </View>
         </View>
-
-        <View style={styles.sliderSection}>
-          <Text style={styles.sectionTitle}>Writing Style Adaptation</Text>
-          <View style={styles.proprietaryBadge}>
-            <Text style={styles.proprietaryText}>🔬 Proprietary Feature</Text>
-            <Text style={styles.proprietarySubtext}>
-              Tailors responses to match your natural academic writing style
-            </Text>
-          </View>
-          <IQSlider
-            value={iqLevel}
-            onValueChange={setIqLevel}
-            min={100}
-            max={160}
-          />
-        </View>
-
-        {analysis && (
-          <View style={styles.resultsSection}>
-            <Text style={styles.sectionTitle}>Homework Help</Text>
-            
-            <View style={styles.analysisCard}>
-              <View style={styles.analysisHeader}>
-                <BookOpen size={20} color="#43e97b" />
-                <Text style={styles.analysisTitle}>Solution & Explanation</Text>
-                <View style={styles.levelBadge}>
-                  <Text style={styles.levelBadgeText}>IQ {analysis.adaptedLevel}</Text>
-                </View>
-              </View>
-              <Text style={styles.analysisText}>{analysis.solution}</Text>
-            </View>
-
-            {analysis.stepByStep && analysis.stepByStep.length > 0 && (
-              <View style={styles.stepsCard}>
-                <Text style={styles.stepsTitle}>📝 Step-by-Step Breakdown</Text>
-                {analysis.stepByStep.map((step, index) => (
-                  <View key={index} style={styles.stepItem}>
-                    <View style={styles.stepNumber}>
-                      <Text style={styles.stepNumberText}>{index + 1}</Text>
-                    </View>
-                    <Text style={styles.stepText}>{step}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
-
-            {analysis.keyPoints && analysis.keyPoints.length > 0 && (
-              <View style={styles.keyPointsCard}>
-                <Text style={styles.keyPointsTitle}>💡 Key Learning Points</Text>
-                {analysis.keyPoints.map((point, index) => (
-                  <View key={index} style={styles.keyPointItem}>
-                    <Text style={styles.keyPointBullet}>•</Text>
-                    <Text style={styles.keyPointText}>{point}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
-
-            {analysis.writingStyle && (
-              <View style={styles.styleCard}>
-                <Text style={styles.styleTitle}>✍️ Writing Style Analysis</Text>
-                <Text style={styles.styleText}>{analysis.writingStyle}</Text>
-              </View>
-            )}
-          </View>
-        )}
-
-        <View style={styles.exampleSection}>
-          <Text style={styles.sectionTitle}>Try These Examples</Text>
-          {[
-            "Explain the causes of World War I and their interconnections",
-            "Solve this calculus problem: Find the derivative of f(x) = x³ + 2x² - 5x + 1",
-            "Analyze the themes in Shakespeare's Hamlet and their relevance today"
-          ].map((example, index) => (
-            <TouchableOpacity
-              key={index}
-              style={styles.exampleCard}
-              onPress={() => setInput(example)}
-            >
-              <Text style={styles.exampleText}>{example}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -265,352 +73,219 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f9fa',
   },
   header: {
-  paddingHorizontal: 32,
-  paddingTop: 20,
-  paddingBottom: 24,
-  borderBottomLeftRadius: 30,
-  borderBottomRightRadius: 30,
-  // The 'alignItems: center' line is removed
-},
-headerIcon: { // You can delete this style block entirely since it's no longer used
-  fontSize: 40,
-  marginBottom: 8,
-},
-title: {
-  fontSize: 32, // Increased to match
-  fontFamily: 'Inter-Bold',
-  color: 'white',
-  marginBottom: 4,
-  textAlign: 'center', // Added to match
-},
-subtitle: {
-  fontSize: 16,
-  fontFamily: 'Inter-Regular',
-  color: 'rgba(255, 255, 255, 0.9)',
-  textAlign: 'center', // Added to match
-},
+    paddingHorizontal: 32,
+    paddingTop: 20, 
+    paddingBottom: 24,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    alignItems: 'center',
+  },
+  headerIcon: {
+    fontSize: 40,
+    marginBottom: 8,
+  },
+  title: {
+    fontSize: 28,
+    fontFamily: 'Inter-Bold',
+    color: 'white',
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 16,
+    fontFamily: 'Inter-Regular',
+    color: 'rgba(255, 255, 255, 0.9)',
+  },
+  content: {
+    flex: 1,
+    padding: 20,
+  },
+  heroImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 16,
+    marginBottom: 24,
+  },
+  comingSoonCard: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 24,
+    marginBottom: 24,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+  },
+  comingSoonTitle: {
+    fontSize: 24,
+    fontFamily: 'Inter-Bold',
+    color: '#667eea',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  comingSoonText: {
+    fontSize: 16,
+    fontFamily: 'Inter-Regular',
+    color: '#666',
+    lineHeight: 24,
+    textAlign: 'center',
+  },
+  featuresContainer: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 20,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+  },
+  featuresTitle: {
+    fontSize: 20,
+    fontFamily: 'Inter-Bold',
+    color: '#1a1a1a',
+    marginBottom: 20,
+  },
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 20,
+  },
+  featureText: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  featureTitle: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+    color: '#1a1a1a',
+    marginBottom: 4,
+  },
+  featureDescription: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: '#666',
+    lineHeight: 20,
+  },
+});
+
+
+
+this is the header size i want: import React from 'react';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
+import PalCard from '@/components/PalCard';
+
+export default function HomeScreen() {
+  // Pals have been reordered and icons/statuses updated as requested.
+  const pals = [
+    {
+      title: 'Cringe Pal',
+      description: 'Hot or cringe analyzer with humor and tips',
+      icon: '⚡️', // Updated icon
+      gradient: ['#f093fb', '#f5576c'],
+      route: '/cringe',
+      isComingSoon: false,
+    },
+    {
+      title: 'Roasta Pal',
+      description: 'Get roasted with customizable intensity levels',
+      icon: '💬', // Updated icon
+      gradient: ['#fa709a', '#fee140'],
+      route: '/roast',
+      isComingSoon: false, // Now active
+    },
+    {
+      title: 'Study Pal',
+      description: 'Interactive study companion with quizzes and motivation',
+      icon: '🎓',
+      gradient: ['#667eea', '#764ba2'],
+      route: '/study',
+      isComingSoon: true,
+    },
+    {
+      title: 'Note Pal',
+      description: 'Polish and summarize your handwritten notes',
+      icon: '📝',
+      gradient: ['#4facfe', '#00f2fe'],
+      route: '/notes',
+      isComingSoon: false, // Now active
+    },
+    {
+      title: 'Homework Pal',
+      description: 'Get help with homework questions and problems',
+      icon: '📚',
+      gradient: ['#43e97b', '#38f9d7'],
+      route: '/homework',
+      isComingSoon: false, // Now active
+    },
+  ];
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <LinearGradient
+        colors={['#667eea', '#764ba2']}
+        style={styles.header}
+      >
+        <Text style={styles.title}>Pal Universe</Text>
+        <Text style={styles.subtitle}>Your AI pals for every task</Text>
+      </LinearGradient>
+      
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <Text style={styles.sectionTitle}>Choose Your Pal</Text>
+        {pals.map((pal, index) => (
+          <PalCard
+            key={index}
+            title={pal.title}
+            description={pal.description}
+            icon={pal.icon}
+            gradient={pal.gradient}
+            onPress={() => router.push(pal.route as any)}
+            isComingSoon={pal.isComingSoon}
+          />
+        ))}
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff', // Changed to white for a cleaner look
+  },
+  // Header styles updated for a more compact design
+  header: {
+    paddingHorizontal: 32,
+    paddingTop: 20, 
+    paddingBottom: 24,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+  },
+  title: {
+    fontSize: 32,
+    fontFamily: 'Inter-Bold',
+    color: 'white',
+    textAlign: 'center',
+    marginBottom: 4, // Reduced margin
+  },
+  subtitle: {
+    fontSize: 16,
+    fontFamily: 'Inter-Regular',
+    color: 'rgba(255, 255, 255, 0.9)',
+    textAlign: 'center',
   },
   content: {
     flex: 1,
     padding: 20,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 24,
     fontFamily: 'Inter-Bold',
     color: '#1a1a1a',
-    marginBottom: 16,
-  },
-  inputSection: {
-    marginBottom: 32,
-  },
-  inputContainer: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 16,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-  },
-  textInput: {
-    fontSize: 16,
-    fontFamily: 'Inter-Regular',
-    color: '#1a1a1a',
-    minHeight: 100,
-    textAlignVertical: 'top',
-    marginBottom: 16,
-  },
-  inputActions: {
-    flexDirection: 'column',
-    gap: 12,
-  },
-  imagePreview: {
-    position: 'relative',
-    alignSelf: 'flex-start',
-  },
-  previewImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 12,
-  },
-  clearImageButton: {
-    position: 'absolute',
-    top: -8,
-    right: -8,
-    backgroundColor: '#ff4444',
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  clearImageText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  imageButton: {
-    padding: 12,
-    borderRadius: 12,
-    backgroundColor: '#e8f4fd',
-    marginRight: 8,
-  },
-  cameraButton: {
-    padding: 12,
-    borderRadius: 12,
-    backgroundColor: '#f0f0f0',
-    marginRight: 8,
-  },
-  analyzeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#43e97b',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 12,
-    gap: 8,
-  },
-  analyzeButtonDisabled: {
-    opacity: 0.6,
-  },
-  analyzeButtonText: {
-    color: 'white',
-    fontFamily: 'Inter-SemiBold',
-    fontSize: 16,
-  },
-  sliderSection: {
-    marginBottom: 32,
-  },
-  proprietaryBadge: {
-    backgroundColor: '#e8f5e8',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: '#43e97b',
-  },
-  proprietaryText: {
-    fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
-    color: '#2d5a3d',
-    marginBottom: 4,
-  },
-  proprietarySubtext: {
-    fontSize: 14,
-    fontFamily: 'Inter-Regular',
-    color: '#4a6b4a',
-    lineHeight: 20,
-  },
-  resultsSection: {
-    marginBottom: 32,
-  },
-  analysisCard: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    borderLeftWidth: 4,
-    borderLeftColor: '#43e97b',
-  },
-  analysisHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    gap: 8,
-  },
-  analysisTitle: {
-    fontSize: 18,
-    fontFamily: 'Inter-SemiBold',
-    color: '#1a1a1a',
-    flex: 1,
-  },
-  levelBadge: {
-    backgroundColor: '#43e97b',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  levelBadgeText: {
-    color: 'white',
-    fontSize: 12,
-    fontFamily: 'Inter-SemiBold',
-  },
-  analysisText: {
-    fontSize: 16,
-    fontFamily: 'Inter-Regular',
-    color: '#333',
-    lineHeight: 24,
-  },
-  stepsCard: {
-    backgroundColor: '#f8f9ff',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: '#007AFF',
-  },
-  stepsTitle: {
-    fontSize: 18,
-    fontFamily: 'Inter-SemiBold',
-    color: '#1a1a1a',
-    marginBottom: 16,
-  },
-  stepItem: {
-    flexDirection: 'row',
-    marginBottom: 12,
-    alignItems: 'flex-start',
-  },
-  stepNumber: {
-    backgroundColor: '#007AFF',
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-    marginTop: 2,
-  },
-  stepNumberText: {
-    color: 'white',
-    fontSize: 12,
-    fontFamily: 'Inter-SemiBold',
-  },
-  stepText: {
-    fontSize: 16,
-    fontFamily: 'Inter-Regular',
-    color: '#333',
-    flex: 1,
-    lineHeight: 22,
-  },
-  keyPointsCard: {
-    backgroundColor: '#fff9e6',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: '#ffc107',
-  },
-  keyPointsTitle: {
-    fontSize: 18,
-    fontFamily: 'Inter-SemiBold',
-    color: '#1a1a1a',
-    marginBottom: 16,
-  },
-  keyPointItem: {
-    flexDirection: 'row',
-    marginBottom: 8,
-    alignItems: 'flex-start',
-  },
-  keyPointBullet: {
-    fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
-    color: '#ffc107',
-    marginRight: 8,
-    marginTop: 2,
-  },
-  keyPointText: {
-    fontSize: 16,
-    fontFamily: 'Inter-Regular',
-    color: '#333',
-    flex: 1,
-    lineHeight: 22,
-  },
-  styleCard: {
-    backgroundColor: '#f0f8ff',
-    borderRadius: 16,
-    padding: 20,
-    borderLeftWidth: 4,
-    borderLeftColor: '#17a2b8',
-  },
-  styleTitle: {
-    fontSize: 18,
-    fontFamily: 'Inter-SemiBold',
-    color: '#1a1a1a',
-    marginBottom: 12,
-  },
-  styleText: {
-    fontSize: 16,
-    fontFamily: 'Inter-Regular',
-    color: '#333',
-    lineHeight: 24,
-    fontStyle: 'italic',
-  },
-  exampleSection: {
-    marginBottom: 32,
-  },
-  exampleCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  exampleText: {
-    fontSize: 14,
-    fontFamily: 'Inter-Regular',
-    color: '#666',
-    lineHeight: 20,
-  },
-  cameraContainer: {
-    flex: 1,
-  },
-  camera: {
-    flex: 1,
-  },
-  cameraOverlay: {
-    flex: 1,
-    backgroundColor: 'transparent',
-  },
-  closeButton: {
-    position: 'absolute',
-    top: 60,
-    right: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  closeButtonText: {
-    color: 'white',
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  cameraControls: {
-    position: 'absolute',
-    bottom: 100,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-  },
-  captureButton: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  captureButtonInner: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: 'white',
+    marginBottom: 20,
+    textAlign: 'center',
   },
 });
+
