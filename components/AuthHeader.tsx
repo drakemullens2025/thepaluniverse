@@ -9,9 +9,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useAuth } from '@/contexts/AuthContext';
 
-// Import your stick figure SVG (adjust path as needed)
-import StickFigure from './StickFigureSword.svg'; // Example SVG component
-
 interface AuthHeaderProps {
   onAuthPress: () => void;
 }
@@ -61,9 +58,13 @@ export default function AuthHeader({ onAuthPress }: AuthHeaderProps) {
   return (
     <View style={styles.container}>
       <View style={styles.hookContainer}>
-        {/* Stick figure logo */}
+        {/* Stick figure logo using the provided image */}
         <View style={styles.logoContainer}>
-          <StickFigure width={30} height={30} /> {/* Adjust size as needed */}
+          <Image 
+            source={require('@/assets/images/image.png')} 
+            style={styles.stickFigureImage}
+            resizeMode="contain"
+          />
           <Text style={styles.hookText}>Brave enough?</Text>
         </View>
         
@@ -98,6 +99,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  stickFigureImage: {
+    width: 30,
+    height: 30,
+    tintColor: 'rgba(255, 255, 255, 0.9)', // Apply white tint to match the design
   },
   hookText: {
     fontSize: 14,
