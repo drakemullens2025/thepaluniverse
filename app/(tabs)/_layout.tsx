@@ -1,10 +1,10 @@
 import { Tabs } from 'expo-router';
 import { 
-  BookOpen, 
-  FileText, 
-  GraduationCap, 
-  Zap, 
-  MessageSquare 
+  Zap,
+  MessageSquare,
+  GraduationCap,
+  FileText,
+  BookOpen
 } from 'lucide-react-native';
 
 export default function TabLayout() {
@@ -38,20 +38,29 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="study"
-        options={{
-          title: 'Study Pal',
-          tabBarIcon: ({ size, color }) => (
-            <GraduationCap size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="cringe"
         options={{
           title: 'Cringe Pal',
           tabBarIcon: ({ size, color }) => (
             <Zap size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="roast"
+        options={{
+          title: 'Roasta Pal',
+          tabBarIcon: ({ size, color }) => (
+            <MessageSquare size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="study"
+        options={{
+          title: 'Study Pal',
+          tabBarIcon: ({ size, color }) => (
+            <GraduationCap size={size} color={color} />
           ),
         }}
       />
@@ -65,11 +74,11 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="roast"
+        name="homework"
         options={{
-          title: 'Roasta Pal',
+          title: 'Homework Pal',
           tabBarIcon: ({ size, color }) => (
-            <MessageSquare size={size} color={color} />
+            <BookOpen size={size} color={color} />
           ),
         }}
       />
