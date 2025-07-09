@@ -45,7 +45,7 @@ export default function HomeScreen() {
       icon: '📚',
       gradient: ['#43e97b', '#38f9d7'],
       route: '/homework',
-      isComingSoon: true,
+      isComingSoon: false, // Now active
     },
   ];
 
