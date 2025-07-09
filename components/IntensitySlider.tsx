@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Platform, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Platform } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -9,7 +9,7 @@ import Animated, {
   runOnJS,
   withRepeat,
 } from 'react-native-reanimated';
-import { Gesture, GestureDetector, Directions } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { LinearGradient } from 'expo-linear-gradient';
 
 interface IntensitySliderProps {
@@ -33,6 +33,8 @@ const IntensitySlider: React.FC<IntensitySliderProps> = ({
   const scale = useSharedValue(1);
   const dangerPulse = useSharedValue(1);
   const isDragging = useSharedValue(false);
+  // FIX: Added shared value to store the drag's starting position
+  const dragStartX = useSharedValue(0);
 
   // Ensure value is within bounds
   const safeValue = Math.max(min, Math.min(max, value));
@@ -87,29 +89,19 @@ const IntensitySlider: React.FC<IntensitySliderProps> = ({
     }
   };
 
-  // Handle keyboard navigation
-  const handleKeyDown = (e: any) => {
-    if (e.nativeEvent.key === 'ArrowLeft' || e.nativeEvent.key === 'ArrowDown') {
-      e.preventDefault();
-      const newValue = Math.max(min, safeValue - 1);
-      runOnJS(onValueChangeJS)(newValue);
-    } else if (e.nativeEvent.key === 'ArrowRight' || e.nativeEvent.key === 'ArrowUp') {
-      e.preventDefault();
-      const newValue = Math.min(max, safeValue + 1);
-      runOnJS(onValueChangeJS)(newValue);
-    }
-  };
-
   // Pan gesture for dragging
   const panGesture = Gesture.Pan()
     .hitSlop(20)
     .onStart(() => {
       isDragging.value = true;
       scale.value = withSpring(1.2);
+      // FIX: Store the starting position of the thumb when the drag begins
+      dragStartX.value = positionForValue(safeValue);
     })
     .onUpdate((event) => {
       const usableWidth = sliderWidth - THUMB_SIZE;
-      const newPosition = Math.max(0, Math.min(usableWidth, event.translationX));
+      // FIX: Calculate new position by adding translation to the start position
+      const newPosition = Math.max(0, Math.min(usableWidth, dragStartX.value + event.translationX));
       translateX.value = newPosition;
       
       const newValue = Math.round(min + (newPosition / usableWidth) * (max - min));
@@ -123,7 +115,7 @@ const IntensitySlider: React.FC<IntensitySliderProps> = ({
 
   // Tap gesture for direct setting
   const tapGesture = Gesture.Tap()
-    .onStart((event) => {
+    .onEnd((event) => { // Use onEnd for tap to avoid conflict with pan start
       const usableWidth = sliderWidth - THUMB_SIZE;
       const newPosition = Math.max(0, Math.min(usableWidth, event.x - THUMB_SIZE / 2));
       const newValue = Math.round(min + (newPosition / usableWidth) * (max - min));
@@ -139,9 +131,10 @@ const IntensitySlider: React.FC<IntensitySliderProps> = ({
     return {
       transform: [
         { translateX: translateX.value },
+        // Use scale for dragging, and dangerPulse for pulsing when not dragging
         { scale: isDragging.value 
           ? scale.value 
-          : withTiming(dangerPulse.value, { duration: 300 }) 
+          : dangerPulse.value 
         },
       ],
       backgroundColor: interpolateColor(
@@ -151,13 +144,6 @@ const IntensitySlider: React.FC<IntensitySliderProps> = ({
       ),
     };
   });
-
-  // Marker position calculation
-  const getMarkerPosition = (level: number) => {
-    if (sliderWidth <= 0) return 0;
-    const usableWidth = sliderWidth - THUMB_SIZE;
-    return ((level - min) / (max - min)) * usableWidth + THUMB_SIZE / 2 - 1;
-  };
 
   return (
     <View style={styles.container}>
@@ -184,15 +170,12 @@ const IntensitySlider: React.FC<IntensitySliderProps> = ({
 
       {/* Slider */}
       <GestureDetector gesture={composedGesture}>
-        <TouchableOpacity
-          activeOpacity={1}
+        <View
           style={styles.sliderContainer}
           onLayout={(e) => setSliderWidth(e.nativeEvent.layout.width)}
           accessibilityRole="slider"
           accessibilityValue={{ min, max, now: safeValue }}
           accessibilityLabel={`Intensity level ${safeValue}`}
-          onPress={() => {}} // Required for accessibility
-          onAccessibilityAction={handleKeyDown}
         >
           {/* Track */}
           <LinearGradient
@@ -203,7 +186,7 @@ const IntensitySlider: React.FC<IntensitySliderProps> = ({
           />
 
           {/* Markers */}
-          <View style={styles.markersContainer}>
+          <View style={styles.markersContainer} pointerEvents="none">
             {[1, 2, 3, 4, 5].map((level) => {
               const label = getIntensityLabel(level);
               return (
@@ -212,9 +195,8 @@ const IntensitySlider: React.FC<IntensitySliderProps> = ({
                   style={[
                     styles.marker,
                     { 
-                      left: getMarkerPosition(level),
-                      backgroundColor: safeValue >= level ? label.color : 'rgba(0,0,0,0.2)',
-                      transform: [{ translateY: -TRACK_HEIGHT/2 }]
+                      left: `${((level - 1) / 4) * 100}%`, // Position markers evenly
+                      backgroundColor: safeValue >= level ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.2)',
                     }
                   ]}
                 />
@@ -226,7 +208,7 @@ const IntensitySlider: React.FC<IntensitySliderProps> = ({
           <Animated.View style={[styles.thumb, thumbAnimatedStyle]}>
             <Text style={styles.thumbEmoji}>{currentLabel.emoji}</Text>
           </Animated.View>
-        </TouchableOpacity>
+        </View>
       </GestureDetector>
     </View>
   );
@@ -236,15 +218,15 @@ const IntensitySlider: React.FC<IntensitySliderProps> = ({
 const styles = StyleSheet.create({
   container: {
     paddingVertical: 16,
-    alignItems: 'center',
+    width: '100%',
   },
   header: {
-    width: '100%',
     marginBottom: 12,
+    alignItems: 'center',
   },
   levelText: {
     fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600', // Using fontWeight for cross-platform consistency
     textAlign: 'center',
     marginBottom: 4,
   },
@@ -254,22 +236,16 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 8,
     backgroundColor: '#fff3cd',
-    alignSelf: 'center',
   },
   dangerText: {
     color: '#856404',
-    fontFamily: 'Inter-Bold',
+    fontWeight: 'bold',
     fontSize: 13,
   },
   sliderContainer: {
     width: '100%',
     height: 60,
     justifyContent: 'center',
-    ...Platform.select({
-      web: {
-        outlineStyle: 'none',
-      }
-    }),
   },
   track: {
     height: TRACK_HEIGHT,
@@ -278,14 +254,14 @@ const styles = StyleSheet.create({
   },
   markersContainer: {
     position: 'absolute',
-    left: 0,
-    right: 0,
-    top: '50%',
+    left: THUMB_SIZE / 2, // Align markers with the usable track area
+    right: THUMB_SIZE / 2,
     height: TRACK_HEIGHT,
-    marginTop: -TRACK_HEIGHT / 2,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   marker: {
-    position: 'absolute',
     width: 2,
     height: '100%',
     borderRadius: 1,
@@ -305,11 +281,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 4,
     top: '50%',
-    transform: [{ translateY: -THUMB_SIZE/2 }],
+    marginTop: -THUMB_SIZE / 2, // Center the thumb vertically
   },
   thumbEmoji: {
     fontSize: 22,
-    color: 'white',
   },
 });
 
