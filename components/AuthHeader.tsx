@@ -61,7 +61,7 @@ export default function AuthHeader({ onAuthPress }: AuthHeaderProps) {
         {/* Stick figure logo using the provided image */}
         <View style={styles.logoContainer}>
           <Image 
-            source={require('@/assets/images/image.png')} 
+            source={require('@/assets/images/logo.png')} 
             style={styles.stickFigureImage}
             resizeMode="contain"
           />
@@ -101,9 +101,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   stickFigureImage: {
-    width: 30,
-    height: 30,
-    tintColor: 'rgba(255, 255, 255, 0.9)', // Apply white tint to match the design
+    width: 32,
+    height: 32,
+    tintColor: 'white', // Apply white tint for visibility against gradient
   },
   hookText: {
     fontSize: 14,
