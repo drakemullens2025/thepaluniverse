@@ -177,7 +177,7 @@ export default function HomeworkPalScreen() {
           <View style={styles.proprietaryBadge}>
             <Text style={styles.proprietaryText}>🔬 Proprietary Feature</Text>
             <Text style={styles.proprietarySubtext}>
-              Tailors responses to match your natural academic writing style
+              AI powered adaptation to match your natural academic writing style
             </Text>
           </View>
           <IQSlider
