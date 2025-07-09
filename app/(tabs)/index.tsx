@@ -1,10 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import PalCard from '@/components/PalCard';
+import AuthHeader from '@/components/AuthHeader';
+import AuthModal from '@/components/AuthModal';
 
 export default function HomeScreen() {
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
   // Pals have been reordered and icons/statuses updated as requested.
   const pals = [
     {
@@ -55,6 +59,7 @@ export default function HomeScreen() {
         colors={['#667eea', '#764ba2']}
         style={styles.header}
       >
+        <AuthHeader onAuthPress={() => setShowAuthModal(true)} />
         <Text style={styles.title}>Pal Universe</Text>
         <Text style={styles.subtitle}>Your AI pals for every task</Text>
       </LinearGradient>
@@ -73,6 +78,11 @@ export default function HomeScreen() {
           />
         ))}
       </ScrollView>
+      
+      <AuthModal 
+        visible={showAuthModal} 
+        onClose={() => setShowAuthModal(false)} 
+      />
     </SafeAreaView>
   );
 }
@@ -89,6 +99,8 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
+    position: 'relative',
+    alignItems: 'center',
   },
   title: {
     fontSize: 32,
