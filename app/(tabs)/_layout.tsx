@@ -1,11 +1,5 @@
 import { Tabs } from 'expo-router';
-import { 
-  Zap,
-  MessageSquare,
-  GraduationCap,
-  FileText,
-  BookOpen
-} from 'lucide-react-native';
+import { Text } from 'react-native';
 
 export default function TabLayout() {
   return (
@@ -33,7 +27,7 @@ export default function TabLayout() {
         options={{
           title: 'Home',
           tabBarIcon: ({ size, color }) => (
-            <BookOpen size={size} color={color} />
+            <Text style={{ fontSize: size, color }}>🏠</Text>
           ),
         }}
       />
@@ -42,7 +36,7 @@ export default function TabLayout() {
         options={{
           title: 'Cringe Pal',
           tabBarIcon: ({ size, color }) => (
-            <Zap size={size} color={color} />
+            <Text style={{ fontSize: size, color }}>⚡</Text>
           ),
         }}
       />
@@ -51,7 +45,7 @@ export default function TabLayout() {
         options={{
           title: 'Roasta Pal',
           tabBarIcon: ({ size, color }) => (
-            <MessageSquare size={size} color={color} />
+            <Text style={{ fontSize: size, color }}>💬</Text>
           ),
         }}
       />
@@ -60,7 +54,7 @@ export default function TabLayout() {
         options={{
           title: 'Study Pal',
           tabBarIcon: ({ size, color }) => (
-            <GraduationCap size={size} color={color} />
+            <Text style={{ fontSize: size, color }}>🎓</Text>
           ),
         }}
       />
@@ -69,7 +63,7 @@ export default function TabLayout() {
         options={{
           title: 'Note Pal',
           tabBarIcon: ({ size, color }) => (
-            <FileText size={size} color={color} />
+            <Text style={{ fontSize: size, color }}>📝</Text>
           ),
         }}
       />
@@ -78,7 +72,7 @@ export default function TabLayout() {
         options={{
           title: 'Homework Pal',
           tabBarIcon: ({ size, color }) => (
-            <BookOpen size={size} color={color} />
+            <Text style={{ fontSize: size, color }}>📚</Text>
           ),
         }}
       />
