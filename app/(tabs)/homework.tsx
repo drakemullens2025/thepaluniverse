@@ -265,27 +265,30 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f9fa',
   },
   header: {
-    paddingHorizontal: 32,
-    paddingTop: 20, 
-    paddingBottom: 24,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    alignItems: 'center',
-  },
-  headerIcon: {
-    fontSize: 40,
-    marginBottom: 8,
-  },
-  title: {
-    fontSize: 28,
-    fontFamily: 'Inter-Bold',
-    color: 'white',
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 16,
-    fontFamily: 'Inter-Regular',
-    color: 'rgba(255, 255, 255, 0.9)',
+  paddingHorizontal: 32,
+  paddingTop: 20,
+  paddingBottom: 24,
+  borderBottomLeftRadius: 30,
+  borderBottomRightRadius: 30,
+  // The 'alignItems: center' line is removed
+},
+headerIcon: { // You can delete this style block entirely since it's no longer used
+  fontSize: 40,
+  marginBottom: 8,
+},
+title: {
+  fontSize: 32, // Increased to match
+  fontFamily: 'Inter-Bold',
+  color: 'white',
+  marginBottom: 4,
+  textAlign: 'center', // Added to match
+},
+subtitle: {
+  fontSize: 16,
+  fontFamily: 'Inter-Regular',
+  color: 'rgba(255, 255, 255, 0.9)',
+  textAlign: 'center', // Added to match
+},
   },
   content: {
     flex: 1,
