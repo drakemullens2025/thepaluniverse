@@ -355,6 +355,15 @@ IMPORTANT: Return ONLY the JSON object, no other text or formatting.`;
   }
 }
 
+export interface NoteAnalysis {
+  digitalText?: string;
+  summary?: string;
+  deeperInsights?: string;
+  keyPoints?: string[];
+  actionItems?: string[];
+  processedType: 'textify' | 'summarize' | 'depth';
+}
+
 export async function generateHomeworkHelp(input: string, iqLevel: number, imageUri?: string): Promise<HomeworkAnalysis> {
   let parts: any[] = [];
   
@@ -555,5 +564,224 @@ IMPORTANT: Return ONLY the JSON object, no other text or formatting.`;
       throw error;
     }
     throw new Error('Failed to generate homework help. Please try again.');
+  }
+}
+
+export async function processNote(
+  input: string, 
+  action: 'textify' | 'summarize' | 'depth',
+  imageUri?: string,
+  existingText?: string
+): Promise<NoteAnalysis> {
+  let parts: any[] = [];
+  
+  // Use the same Gemini 2.5 Flash Preview model
+  const model = 'gemini-2.5-flash-preview-05-20';
+  const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+  
+  let promptText = '';
+  
+  if (action === 'textify') {
+    promptText = `You are a note digitization expert. ${imageUri ? 'Extract and transcribe all text from this handwritten note image' : 'Process this text input'}.
+        
+${imageUri ? `Additional context: "${input}"` : `Text: "${input}"`}
+        
+Instructions:
+- Extract ALL text accurately, maintaining structure and formatting
+- Preserve bullet points, numbering, and organization
+- Fix obvious spelling errors but maintain the original meaning
+- Keep the same tone and style as the original
+- If handwriting is unclear, use [unclear] notation
+
+You MUST provide your response as valid JSON only, with no markdown formatting or code blocks. Return ONLY this JSON structure:
+{
+  "digitalText": "[complete transcribed text with proper formatting]",
+  "processedType": "textify"
+}
+
+IMPORTANT: Return ONLY the JSON object, no other text or formatting.`;
+  } else if (action === 'summarize') {
+    const textToSummarize = existingText || input;
+    promptText = `You are a note summarization expert. Create a concise, well-structured summary of this text.
+        
+Text to summarize: "${textToSummarize}"
+        
+Instructions:
+- Create a clear, concise summary that captures the main points
+- Use bullet points or numbered lists for clarity
+- Maintain the key information and context
+- Make it easy to scan and understand quickly
+- Keep it roughly 1/3 the length of the original
+
+You MUST provide your response as valid JSON only, with no markdown formatting or code blocks. Return ONLY this JSON structure:
+{
+  "summary": "[well-structured summary with bullet points]",
+  "keyPoints": ["key point 1", "key point 2", "key point 3"],
+  "processedType": "summarize"
+}
+
+IMPORTANT: Return ONLY the JSON object, no other text or formatting.`;
+  } else if (action === 'depth') {
+    const textToAnalyze = existingText || input;
+    promptText = `You are an expert analyst. Provide deeper insights, context, and analysis for this content.
+        
+Content to analyze: "${textToAnalyze}"
+        
+Instructions:
+- Add relevant context and background information
+- Provide deeper analysis and insights
+- Connect concepts to broader themes or applications
+- Suggest related topics or areas to explore
+- Include practical applications or implications
+- Make connections that enhance understanding
+
+You MUST provide your response as valid JSON only, with no markdown formatting or code blocks. Return ONLY this JSON structure:
+{
+  "deeperInsights": "[comprehensive analysis with added context and insights]",
+  "actionItems": ["actionable insight 1", "actionable insight 2", "actionable insight 3"],
+  "processedType": "depth"
+}
+
+IMPORTANT: Return ONLY the JSON object, no other text or formatting.`;
+  }
+
+  if (imageUri && action === 'textify') {
+    try {
+      // For image analysis, convert the image to base64
+      const response = await fetch(imageUri);
+      const blob = await response.blob();
+      
+      // Get the actual MIME type from the blob
+      const mimeType = blob.type || 'image/jpeg';
+      
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (reader.result) {
+            const base64String = (reader.result as string).split(',')[1];
+            resolve(base64String);
+          } else {
+            reject(new Error('Failed to read image'));
+          }
+        };
+        reader.onerror = () => reject(new Error('Failed to read image'));
+        reader.readAsDataURL(blob);
+      });
+      
+      parts = [
+        {
+          text: promptText
+        },
+        {
+          inline_data: {
+            mime_type: mimeType,
+            data: base64
+          }
+        }
+      ];
+    } catch (error) {
+      console.error('Error processing image:', error);
+      throw new Error('Failed to process image');
+    }
+  } else {
+    parts = [{ text: promptText }];
+  }
+
+  try {
+    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: parts
+        }],
+        generationConfig: {
+          temperature: 0.3, // Lower temperature for more accurate transcription/analysis
+          topK: 1,
+          topP: 1,
+          maxOutputTokens: 2048,
+          candidateCount: 1,
+          stopSequences: [],
+        }
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('API Error Response:', errorData);
+      throw new Error(`Failed to process note: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    // Validate response structure
+    if (!data.candidates || !Array.isArray(data.candidates) || data.candidates.length === 0) {
+      console.error('Invalid response structure - no candidates:', data);
+      throw new Error('Invalid API response: no candidates');
+    }
+    
+    const candidate = data.candidates[0];
+    if (!candidate.content || !candidate.content.parts || !Array.isArray(candidate.content.parts) || candidate.content.parts.length === 0) {
+      console.error('Invalid response structure - no content parts:', candidate);
+      throw new Error('Invalid API response: no content parts');
+    }
+    
+    const text = candidate.content.parts[0].text;
+    if (!text) {
+      console.error('No text in response:', candidate.content.parts[0]);
+      throw new Error('Invalid API response: no text content');
+    }
+    
+    // Log the full response for debugging
+    console.log('Full note processing response:', text);
+    
+    // Clean the response text
+    let cleanedText = text.trim();
+    
+    // Remove markdown code blocks if present
+    cleanedText = cleanedText.replace(/^```json\s*/i, '').replace(/\s*```$/i, '');
+    
+    // Try to find JSON object in the text
+    const jsonStart = cleanedText.indexOf('{');
+    const jsonEnd = cleanedText.lastIndexOf('}');
+    
+    if (jsonStart === -1 || jsonEnd === -1 || jsonStart > jsonEnd) {
+      console.error('No valid JSON structure found in text:', cleanedText);
+      throw new Error('Invalid response format: no JSON found');
+    }
+    
+    const jsonString = cleanedText.substring(jsonStart, jsonEnd + 1);
+    
+    try {
+      const result = JSON.parse(jsonString);
+      
+      // Validate the result has required fields based on action
+      if (action === 'textify' && !result.digitalText) {
+        console.error('Invalid JSON structure for textify:', result);
+        throw new Error('Invalid JSON structure: missing digitalText');
+      }
+      if (action === 'summarize' && !result.summary) {
+        console.error('Invalid JSON structure for summarize:', result);
+        throw new Error('Invalid JSON structure: missing summary');
+      }
+      if (action === 'depth' && !result.deeperInsights) {
+        console.error('Invalid JSON structure for depth:', result);
+        throw new Error('Invalid JSON structure: missing deeperInsights');
+      }
+      
+      return result;
+    } catch (parseError) {
+      console.error('Failed to parse JSON:', jsonString);
+      console.error('Parse error:', parseError);
+      throw new Error('Invalid JSON in response');
+    }
+  } catch (error) {
+    console.error('Gemini API error:', error);
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Failed to process note. Please try again.');
   }
 }

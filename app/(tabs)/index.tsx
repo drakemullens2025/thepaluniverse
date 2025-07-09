@@ -37,7 +37,7 @@ export default function HomeScreen() {
       icon: '📝',
       gradient: ['#4facfe', '#00f2fe'],
       route: '/notes',
-      isComingSoon: true,
+      isComingSoon: false, // Now active
     },
     {
       title: 'Homework Pal',
