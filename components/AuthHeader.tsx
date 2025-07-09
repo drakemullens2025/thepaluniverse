@@ -1,16 +1,16 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { LogOut } from 'lucide-react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withRepeat,
-  withTiming,
   withSpring,
-  interpolateColor,
 } from 'react-native-reanimated';
 import { useAuth } from '@/contexts/AuthContext';
+
+// Import your stick figure SVG (adjust path as needed)
+import StickFigure from './StickFigureSword.svg'; // Example SVG component
 
 interface AuthHeaderProps {
   onAuthPress: () => void;
@@ -19,34 +19,13 @@ interface AuthHeaderProps {
 export default function AuthHeader({ onAuthPress }: AuthHeaderProps) {
   const { user, profile, signOut } = useAuth();
   
-  // Animation values
-  const glowPulse = useSharedValue(0);
-  const sparkleRotation = useSharedValue(0);
+  // Button press animation
   const buttonScale = useSharedValue(1);
-
-  useEffect(() => {
-    if (!user) {
-      // Animate the "Brave enough?" hook
-      glowPulse.value = withRepeat(
-        withTiming(1, { duration: 2000 }),
-        -1,
-        true
-      );
-      
-      sparkleRotation.value = withRepeat(
-        withTiming(360, { duration: 3000 }),
-        -1,
-        false
-      );
-    }
-  }, [user]);
 
   const handlePress = () => {
     if (user) {
-      // Show logout confirmation or menu
       signOut();
     } else {
-      // Animate button press
       buttonScale.value = withSpring(0.95, { duration: 100 }, () => {
         buttonScale.value = withSpring(1, { duration: 100 });
       });
@@ -54,27 +33,12 @@ export default function AuthHeader({ onAuthPress }: AuthHeaderProps) {
     }
   };
 
-  const glowStyle = useAnimatedStyle(() => ({
-    opacity: interpolateColor(
-      glowPulse.value,
-      [0, 1],
-      [0.6, 1]
-    ),
-    transform: [
-      { scale: interpolateColor(glowPulse.value, [0, 1], [1, 1.05]) }
-    ],
-  }));
-
-  const sparkleStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${sparkleRotation.value}deg` }],
-  }));
-
   const buttonStyle = useAnimatedStyle(() => ({
     transform: [{ scale: buttonScale.value }],
   }));
 
   if (user) {
-    // Logged-in state: Show profile circle
+    // Logged-in state: Profile circle
     const initials = profile?.displayName 
       ? profile.displayName.substring(0, 2).toUpperCase()
       : user.email?.substring(0, 2).toUpperCase() || 'U';
@@ -93,12 +57,13 @@ export default function AuthHeader({ onAuthPress }: AuthHeaderProps) {
     );
   }
 
-  // Logged-out state: Show "Brave enough?" hook
+  // Logged-out state: Logo + CTA
   return (
     <View style={styles.container}>
-      <Animated.View style={[styles.hookContainer, glowStyle]}>
-        <View style={styles.questionContainer}>
-          <Animated.Text style={[styles.sparkle, sparkleStyle]}>✨</Animated.Text>
+      <View style={styles.hookContainer}>
+        {/* Stick figure logo */}
+        <View style={styles.logoContainer}>
+          <StickFigure width={30} height={30} /> {/* Adjust size as needed */}
           <Text style={styles.hookText}>Brave enough?</Text>
         </View>
         
@@ -112,7 +77,7 @@ export default function AuthHeader({ onAuthPress }: AuthHeaderProps) {
             </LinearGradient>
           </TouchableOpacity>
         </Animated.View>
-      </Animated.View>
+      </View>
     </View>
   );
 }
@@ -125,16 +90,14 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   hookContainer: {
-    alignItems: 'flex-start',
-  },
-  questionContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    gap: 8, // Space between logo and CTA
   },
-  sparkle: {
-    fontSize: 16,
-    marginRight: 6,
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   hookText: {
     fontSize: 14,
@@ -152,6 +115,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
+    marginLeft: 'auto', // Align right within hookContainer
   },
   ctaGradient: {
     paddingHorizontal: 16,
