@@ -13,18 +13,7 @@ import {
   Clipboard,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { 
-  Camera, 
-  Upload, 
-  FileText, 
-  Sparkles, 
-  Copy, 
-  Plus, 
-  X,
-  Eye,
-  Brain,
-  CheckCircle
-} from 'lucide-react-native';
+import { Camera, Upload, FileText, Sparkles, Copy, Plus, X, Eye, Brain, CircleCheck as CheckCircle } from 'lucide-react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
