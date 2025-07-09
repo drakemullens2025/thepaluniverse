@@ -105,7 +105,7 @@ export default function RoastaPalScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <LinearGradient colors={['#fa709a', '#fee140']} style={styles.header}>
-        <Text style={styles.headerIcon}>🔥</Text>
+        <Text style={styles.headerIcon}>💬</Text>
         <Text style={styles.title}>Roasta Pal</Text>
         <Text style={styles.subtitle}>Get roasted with style</Text>
       </LinearGradient>

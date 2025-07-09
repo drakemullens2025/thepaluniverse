@@ -108,7 +108,7 @@ export default function CringePalScreen() {
         colors={['#f093fb', '#f5576c']}
         style={styles.header}
       >
-        <Text style={styles.headerIcon}>🔥</Text>
+        <Text style={styles.headerIcon}>⚡</Text>
         <Text style={styles.title}>Cringe Pal</Text>
         <Text style={styles.subtitle}>Hot or Cringe? Let's find out!</Text>
       </LinearGradient>
