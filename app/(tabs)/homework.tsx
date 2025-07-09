@@ -15,7 +15,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Camera, Send, Upload, BookOpen } from 'lucide-react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
-import IQSlider from '@/components/IQSlider';
+import IQSlider from '../../components/IQSlider';
 import { generateHomeworkHelp, HomeworkAnalysis } from '@/lib/gemini';
 
 export default function HomeworkPalScreen() {
