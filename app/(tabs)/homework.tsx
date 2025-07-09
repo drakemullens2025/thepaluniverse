@@ -115,7 +115,7 @@ export default function HomeworkPalScreen() {
       >
         <Text style={styles.headerIcon}>📚</Text>
         <Text style={styles.title}>Homework Pal</Text>
-        <Text style={styles.subtitle}>Your intelligent homework companion</Text>
+        <Text style={styles.subtitle}>Your Adaptive AI homework Pal</Text>
       </LinearGradient>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
