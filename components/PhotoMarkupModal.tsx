@@ -27,6 +27,7 @@ import ViewShot from 'react-native-view-shot';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as Sharing from 'expo-sharing';
 import * as MediaLibrary from 'expo-media-library';
+import { Platform } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
@@ -316,17 +317,28 @@ export default function PhotoMarkupModal({
 
       const finalUri = await addBranding(uri);
       
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(finalUri, {
-          mimeType: 'image/png',
-          dialogTitle: `Share your ${responseType === 'roast' ? 'roast' : 'cringe analysis'}!`,
-        });
+      if (Platform.OS === 'web') {
+        // Web platform: trigger download
+        const link = document.createElement('a');
+        link.href = finalUri;
+        link.download = `pal-universe-${responseType}-${Date.now()}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
       } else {
-        Alert.alert('Sharing not available', 'Sharing is not available on this device');
+        // Mobile platforms: use expo-sharing
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(finalUri, {
+            mimeType: 'image/png',
+            dialogTitle: `Share your ${responseType === 'roast' ? 'roast' : 'cringe analysis'}!`,
+          });
+        } else {
+          Alert.alert('Sharing not available', 'Sharing is not available on this device');
+        }
       }
     } catch (error) {
       console.error('Error sharing:', error);
-      Alert.alert('Error', 'Failed to share image');
+      Alert.alert('Error', Platform.OS === 'web' ? 'Failed to download image' : 'Failed to share image');
     } finally {
       setIsProcessing(false);
     }

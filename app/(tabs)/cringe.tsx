@@ -122,13 +122,25 @@ export default function CringePalScreen() {
       if (user) {
         await sharingService.saveCreationToDatabase(creation);
       } else {
-        await sharingService.saveCreationLocally(creation);
+        try {
+          await sharingService.saveCreationLocally(creation);
+        } catch (error) {
+          if (error instanceof Error && error.message === 'QUOTA_EXCEEDED') {
+            Alert.alert(
+              'Storage Full',
+              'Your device storage is full. Please log in to save your creations to the cloud, or delete some existing creations to free up space.',
+              [{ text: 'OK' }]
+            );
+            return;
+          }
+          throw error;
+        }
       }
       
       setShowMarkupModal(true);
     } catch (error) {
       console.error('Error saving creation:', error);
-      Alert.alert('Error', 'Failed to save creation');
+      Alert.alert('Error', 'Failed to save creation. Please try again.');
     }
   };
 

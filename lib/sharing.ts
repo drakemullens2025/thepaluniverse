@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
+import { Platform } from 'react-native';
 
 export interface SharedCreation {
   id: string;
@@ -28,9 +29,19 @@ export const sharingService = {
       const existingCreations = await this.getLocalCreations();
       const updatedCreations = [fullCreation, ...existingCreations];
       
-      await AsyncStorage.setItem('saved_creations', JSON.stringify(updatedCreations));
+      try {
+        await AsyncStorage.setItem('saved_creations', JSON.stringify(updatedCreations));
+      } catch (storageError: any) {
+        if (storageError.name === 'QuotaExceededError' || storageError.message?.includes('quota')) {
+          throw new Error('QUOTA_EXCEEDED');
+        }
+        throw storageError;
+      }
       return id;
     } catch (error) {
+      if (error instanceof Error && error.message === 'QUOTA_EXCEEDED') {
+        throw error;
+      }
       console.error('Error saving creation locally:', error);
       throw error;
     }
@@ -138,7 +149,14 @@ export const sharingService = {
       if (isLocal) {
         const creations = await this.getLocalCreations();
         const filtered = creations.filter(c => c.id !== id);
-        await AsyncStorage.setItem('saved_creations', JSON.stringify(filtered));
+        try {
+          await AsyncStorage.setItem('saved_creations', JSON.stringify(filtered));
+        } catch (storageError: any) {
+          if (storageError.name === 'QuotaExceededError' || storageError.message?.includes('quota')) {
+            throw new Error('QUOTA_EXCEEDED');
+          }
+          throw storageError;
+        }
         return true;
       } else {
         const { error } = await supabase
@@ -149,6 +167,9 @@ export const sharingService = {
         return !error;
       }
     } catch (error) {
+      if (error instanceof Error && error.message === 'QUOTA_EXCEEDED') {
+        throw error;
+      }
       console.error('Error deleting creation:', error);
       return false;
     }

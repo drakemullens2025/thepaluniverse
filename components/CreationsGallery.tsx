@@ -59,16 +59,28 @@ export default function CreationsGallery() {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
-            const success = await sharingService.deleteCreation(
-              creation.id,
-              creation.type,
-              !user // isLocal if no user
-            );
-            
-            if (success) {
-              setCreations(prev => prev.filter(c => c.id !== creation.id));
-            } else {
-              Alert.alert('Error', 'Failed to delete creation');
+            try {
+              const success = await sharingService.deleteCreation(
+                creation.id,
+                creation.type,
+                !user // isLocal if no user
+              );
+              
+              if (success) {
+                setCreations(prev => prev.filter(c => c.id !== creation.id));
+              } else {
+                Alert.alert('Error', 'Failed to delete creation');
+              }
+            } catch (error) {
+              if (error instanceof Error && error.message === 'QUOTA_EXCEEDED') {
+                Alert.alert(
+                  'Storage Error',
+                  'Unable to update storage. Please try logging in for cloud storage or restart the app.',
+                  [{ text: 'OK' }]
+                );
+              } else {
+                Alert.alert('Error', 'Failed to delete creation');
+              }
             }
           },
         },
