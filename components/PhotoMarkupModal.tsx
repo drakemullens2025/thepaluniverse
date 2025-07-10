@@ -59,6 +59,7 @@ interface PhotoMarkupModalProps {
     hotLevel?: number;
     cringeLevel?: number;
   };
+  onSave?: () => void;
 }
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -83,7 +84,8 @@ export default function PhotoMarkupModal({
   imageUri,
   aiResponse,
   responseType,
-  metadata = {}
+  metadata = {},
+  onSave
 }: PhotoMarkupModalProps) {
   const { user } = useAuth();
   const [textOverlays, setTextOverlays] = useState<TextOverlay[]>([]);
@@ -336,9 +338,58 @@ export default function PhotoMarkupModal({
           Alert.alert('Sharing not available', 'Sharing is not available on this device');
         }
       }
+      
+      // Call onSave callback if provided
+      if (onSave) {
+        onSave();
+      }
     } catch (error) {
       console.error('Error sharing:', error);
       Alert.alert('Error', Platform.OS === 'web' ? 'Failed to download image' : 'Failed to share image');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!viewShotRef.current) return;
+    
+    setIsProcessing(true);
+    try {
+      const uri = await viewShotRef.current.capture({
+        format: 'png',
+        quality: 1.0,
+        result: 'tmpfile',
+      });
+
+      const finalUri = await addBranding(uri);
+      
+      if (Platform.OS === 'web') {
+        // Web platform: trigger download
+        const link = document.createElement('a');
+        link.href = finalUri;
+        link.download = `pal-universe-${responseType}-${Date.now()}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        // Mobile platforms: save to media library
+        const { status } = await MediaLibrary.requestPermissionsAsync();
+        if (status === 'granted') {
+          await MediaLibrary.saveToLibraryAsync(finalUri);
+          Alert.alert('Success', 'Image saved to your photo library!');
+        } else {
+          Alert.alert('Permission Required', 'Permission to save photos is required');
+        }
+      }
+      
+      // Call onSave callback if provided
+      if (onSave) {
+        onSave();
+      }
+    } catch (error) {
+      console.error('Error saving:', error);
+      Alert.alert('Error', 'Failed to save image');
     } finally {
       setIsProcessing(false);
     }
@@ -404,6 +455,17 @@ export default function PhotoMarkupModal({
               disabled={overlayHistory.length === 0}
             >
               <Undo2 size={20} color={overlayHistory.length === 0 ? 'rgba(255,255,255,0.5)' : 'white'} />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.headerButton} 
+              onPress={handleSave}
+              disabled={isProcessing}
+            >
+              {isProcessing ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <Text style={styles.saveButtonText}>Save</Text>
+              )}
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.headerButton} 
@@ -782,5 +844,10 @@ const styles = StyleSheet.create({
   fontSizeIcon: {
     fontSize: 22,
     fontFamily: 'Inter-Bold',
+  },
+  saveButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
   },
 });

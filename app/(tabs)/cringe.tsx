@@ -337,6 +337,10 @@ export default function CringePalScreen() {
             cringeLevel: analysis.cringeLevel,
             tips: analysis.tips,
           }}
+          onSave={() => {
+            // Refresh or update UI if needed
+            console.log('Creation saved successfully');
+          }}
         />
       )}
     </SafeAreaView>

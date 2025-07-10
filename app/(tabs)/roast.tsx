@@ -338,6 +338,10 @@ export default function RoastaPalScreen() {
             intensity: roast.intensity,
             burnLevel: roast.burnLevel,
           }}
+          onSave={() => {
+            // Refresh or update UI if needed
+            console.log('Creation saved successfully');
+          }}
         />
       )}
     </SafeAreaView>
