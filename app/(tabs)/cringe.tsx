@@ -11,8 +11,8 @@ import {
   Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Camera, Send, Sparkles } from 'lucide-react-native';
-import { CameraView, useCameraPermissions } from 'expo-camera';
+import { Camera, Send, Sparkles, RotateCcw } from 'lucide-react-native';
+import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import AnimatedMeter from '@/components/AnimatedMeter';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -25,6 +25,7 @@ export default function CringePalScreen() {
   const [showCamera, setShowCamera] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [facing, setFacing] = useState<CameraType>('back');
 
   const handleAnalyze = async () => {
     if (!input.trim() && !selectedImage) {
@@ -52,6 +53,26 @@ export default function CringePalScreen() {
       }
     }
     setShowCamera(true);
+  };
+
+  const takePicture = async (camera: any) => {
+    if (camera) {
+      try {
+        const photo = await camera.takePictureAsync({
+          quality: 0.7,
+          base64: false,
+        });
+        setSelectedImage(photo.uri);
+        setInput('Photo captured for analysis');
+        setShowCamera(false);
+      } catch (error) {
+        Alert.alert('Error', 'Failed to take picture');
+      }
+    }
+  };
+
+  const toggleCameraFacing = () => {
+    setFacing(current => (current === 'back' ? 'front' : 'back'));
   };
 
   const handleImagePicker = async () => {
@@ -83,7 +104,7 @@ export default function CringePalScreen() {
   if (showCamera) {
     return (
       <View style={styles.cameraContainer}>
-        <CameraView style={styles.camera} facing="back">
+        <CameraView style={styles.camera} facing={facing}>
           <View style={styles.cameraOverlay}>
             <TouchableOpacity
               style={styles.closeButton}
@@ -91,8 +112,16 @@ export default function CringePalScreen() {
             >
               <Text style={styles.closeButtonText}>✕</Text>
             </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={styles.flipButton}
+              onPress={toggleCameraFacing}
+            >
+              <RotateCcw size={24} color="white" />
+            </TouchableOpacity>
+            
             <View style={styles.cameraControls}>
-              <TouchableOpacity style={styles.captureButton}>
+              <TouchableOpacity style={styles.captureButton} onPress={takePicture}>
                 <View style={styles.captureButtonInner} />
               </TouchableOpacity>
             </View>
@@ -462,6 +491,17 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 20,
     fontWeight: 'bold',
+  },
+  flipButton: {
+    position: 'absolute',
+    top: 60,
+    left: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   cameraControls: {
     position: 'absolute',
