@@ -12,7 +12,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Camera, Send, Upload, RotateCcw } from 'lucide-react-native';
+import { Camera, Send, Upload, RotateCcw, Sparkles } from 'lucide-react-native';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 
@@ -22,6 +22,9 @@ import IntensitySlider from '../../components/IntensitySlider';
 // import LoadingSpinner from '@/components/LoadingSpinner'; // If you have a custom one
 // This is the corrected line
 import { generateRoast, type RoastAnalysis } from '/home/project/lib/gemini.ts';
+import PhotoMarkupModal from '@/components/PhotoMarkupModal';
+import { sharingService } from '@/lib/sharing';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function RoastaPalScreen() {
   // --- State Management for the App ---
@@ -34,6 +37,8 @@ export default function RoastaPalScreen() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [facing, setFacing] = useState<CameraType>('back');
   const [cameraRef, setCameraRef] = useState<any>(null);
+  const [showMarkupModal, setShowMarkupModal] = useState(false);
+  const { user } = useAuth();
 
   // --- Handlers for App Logic ---
 
@@ -105,6 +110,36 @@ export default function RoastaPalScreen() {
 
   const toggleCameraFacing = () => {
     setFacing(current => (current === 'back' ? 'front' : 'back'));
+  };
+
+  const handleMarkupAndShare = async () => {
+    if (!roast || !selectedImage) return;
+    
+    // Save creation locally/to database
+    try {
+      const creation = {
+        userId: user?.id || 'anonymous',
+        type: 'roast' as const,
+        imageUri: selectedImage,
+        aiResponse: roast.roastText,
+        metadata: {
+          intensity: roast.intensity,
+          burnLevel: roast.burnLevel,
+        },
+        createdAt: new Date().toISOString(),
+      };
+      
+      if (user) {
+        await sharingService.saveCreationToDatabase(creation);
+      } else {
+        await sharingService.saveCreationLocally(creation);
+      }
+      
+      setShowMarkupModal(true);
+    } catch (error) {
+      console.error('Error saving creation:', error);
+      Alert.alert('Error', 'Failed to save creation');
+    }
   };
 
   const clearImage = () => {
@@ -259,9 +294,40 @@ export default function RoastaPalScreen() {
               </View>
               <Text style={styles.roastText}>{roast.roastText}</Text>
             </View>
+            
+            {/* Markup and Share Button */}
+            {selectedImage && (
+              <TouchableOpacity
+                style={styles.markupButton}
+                onPress={handleMarkupAndShare}
+              >
+                <LinearGradient
+                  colors={['#fa709a', '#fee140']}
+                  style={styles.markupGradient}
+                >
+                  <Sparkles size={20} color="white" />
+                  <Text style={styles.markupButtonText}>Markup & Share</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            )}
           </View>
         )}
       </ScrollView>
+      
+      {/* Photo Markup Modal */}
+      {roast && selectedImage && (
+        <PhotoMarkupModal
+          visible={showMarkupModal}
+          onClose={() => setShowMarkupModal(false)}
+          imageUri={selectedImage}
+          aiResponse={roast.roastText}
+          responseType="roast"
+          metadata={{
+            intensity: roast.intensity,
+            burnLevel: roast.burnLevel,
+          }}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -440,6 +506,29 @@ const styles = StyleSheet.create({
     color: '#1a1a1a',
     lineHeight: 24,
     fontStyle: 'italic',
+  },
+  markupButton: {
+    borderRadius: 16,
+    marginTop: 16,
+    overflow: 'hidden',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+  },
+  markupGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    gap: 8,
+  },
+  markupButtonText: {
+    color: 'white',
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 16,
   },
   cameraContainer: {
     flex: 1,

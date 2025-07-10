@@ -50,6 +50,15 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="gallery"
+        options={{
+          title: 'Gallery',
+          tabBarIcon: ({ size, color }) => (
+            <Text style={{ fontSize: size, color }}>🎨</Text>
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="study"
         options={{
           title: 'Study Pal',
