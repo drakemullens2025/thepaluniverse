@@ -815,6 +815,8 @@ IMPORTANT: Return ONLY the JSON object, no other text or formatting.`;
     
  
   }
+}
+  }
 }   // Clean the response text
     let cleanedText = text.trim();
     
