@@ -173,7 +173,7 @@ const IntensitySlider: React.FC<IntensitySliderProps> = ({
         <View
           style={styles.sliderContainer}
           onLayout={(e) => setSliderWidth(e.nativeEvent.layout.width)}
-          accessibilityRole="slider"
+          accessible={true}
           accessibilityValue={{ min, max, now: safeValue }}
           accessibilityLabel={`Intensity level ${safeValue}`}
         >
