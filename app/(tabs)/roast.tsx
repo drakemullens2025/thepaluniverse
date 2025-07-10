@@ -66,12 +66,38 @@ export default function RoastaPalScreen() {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       quality: 0.7, // Use 0.7 for faster uploads
-      base64: true, // Gemini may need base64 data
     });
 
     if (!result.canceled && result.assets[0].uri) {
       setSelectedImage(result.assets[0].uri);
       setInput('Image selected for roasting'); // Optional: Update input text
+    }
+  };
+
+  const handleCameraPress = async () => {
+    if (!permission?.granted) {
+      const result = await requestPermission();
+      if (!result.granted) {
+        Alert.alert('Permission Required', 'Camera permission is needed to capture images');
+        return;
+      }
+    }
+    setShowCamera(true);
+  };
+
+  const takePicture = async (camera: any) => {
+    if (camera) {
+      try {
+        const photo = await camera.takePictureAsync({
+          quality: 0.7,
+          base64: false,
+        });
+        setSelectedImage(photo.uri);
+        setInput('Photo captured for roasting');
+        setShowCamera(false);
+      } catch (error) {
+        Alert.alert('Error', 'Failed to take picture');
+      }
     }
   };
 
@@ -101,6 +127,31 @@ export default function RoastaPalScreen() {
   };
 
   // --- JSX for the Screen ---
+
+  if (showCamera) {
+    return (
+      <View style={styles.cameraContainer}>
+        <CameraView style={styles.camera} facing="back" ref={(ref) => ref}>
+          <View style={styles.cameraOverlay}>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setShowCamera(false)}
+            >
+              <Text style={styles.closeButtonText}>✕</Text>
+            </TouchableOpacity>
+            <View style={styles.cameraControls}>
+              <TouchableOpacity 
+                style={styles.captureButton}
+                onPress={() => takePicture}
+              >
+                <View style={styles.captureButtonInner} />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </CameraView>
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -136,7 +187,9 @@ export default function RoastaPalScreen() {
                 <TouchableOpacity style={styles.iconButton} onPress={handleImagePicker}>
                   <Upload size={20} color="#666" />
                 </TouchableOpacity>
-                {/* Camera functionality can be added here if needed */}
+                <TouchableOpacity style={styles.iconButton} onPress={handleCameraPress}>
+                  <Camera size={20} color="#666" />
+                </TouchableOpacity>
               </View>
               <TouchableOpacity
                 style={[styles.roastButton, loading && styles.roastButtonDisabled]}
@@ -369,5 +422,52 @@ const styles = StyleSheet.create({
     color: '#1a1a1a',
     lineHeight: 24,
     fontStyle: 'italic',
+  },
+  cameraContainer: {
+    flex: 1,
+  },
+  camera: {
+    flex: 1,
+  },
+  cameraOverlay: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 60,
+    right: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeButtonText: {
+    color: 'white',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  cameraControls: {
+    position: 'absolute',
+    bottom: 100,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  captureButton: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  captureButtonInner: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'white',
   },
 });
