@@ -419,7 +419,14 @@ Writing Style Instructions:
 
 IMPORTANT: This is a proprietary feature that tailors responses to match the user's natural academic writing style and intellectual level.
 
-You MUST provide your response as valid JSON only, with no markdown formatting or code blocks. Return ONLY this JSON structure:
+CRITICAL JSON FORMATTING REQUIREMENTS:
+- You MUST return ONLY valid JSON with no additional text, explanations, or formatting
+- ALL keys and string values MUST be enclosed in double quotes
+- Do NOT use markdown code blocks, backticks, or any other formatting
+- Do NOT include any text before or after the JSON object
+- Ensure the JSON is complete and properly closed
+
+Return ONLY this exact JSON structure:
 {
   "solution": "[comprehensive answer/solution adapted to the specified IQ level${imageUri ? ' based on the image' : ''}]",
   "adaptedLevel": ${iqLevel},
@@ -432,7 +439,7 @@ Adapt the complexity, vocabulary, depth of analysis, and explanation style to ma
 For higher IQ levels, include more sophisticated analysis, theoretical frameworks, and nuanced insights.
 For lower IQ levels, focus on clarity, step-by-step explanations, and practical examples.
 
-IMPORTANT: Return ONLY the JSON object, no other text or formatting.`;
+CRITICAL: Return ONLY the JSON object with proper double quotes around all keys and string values.`;
 
   if (imageUri) {
     try {
@@ -490,7 +497,7 @@ IMPORTANT: Return ONLY the JSON object, no other text or formatting.`;
           temperature: 0.7, // Balanced creativity and accuracy for educational content
           topK: 1,
           topP: 1,
-          maxOutputTokens: 3072, // Increased for detailed homework help
+          maxOutputTokens: 4096, // Increased to prevent truncation
           candidateCount: 1,
           stopSequences: [],
         }
@@ -526,38 +533,70 @@ IMPORTANT: Return ONLY the JSON object, no other text or formatting.`;
     // Log the full response for debugging
     console.log('Full homework response:', text);
     
-    // Clean the response text
-    let cleanedText = text.trim();
-    
-    // Remove markdown code blocks if present
-    cleanedText = cleanedText.replace(/^```json\s*/i, '').replace(/\s*```$/i, '');
-    
-    // Try to find JSON object in the text
-    const jsonStart = cleanedText.indexOf('{');
-    const jsonEnd = cleanedText.lastIndexOf('}');
-    
-    if (jsonStart === -1 || jsonEnd === -1 || jsonStart > jsonEnd) {
-      console.error('No valid JSON structure found in text:', cleanedText);
-      throw new Error('Invalid response format: no JSON found');
-    }
-    
-    const jsonString = cleanedText.substring(jsonStart, jsonEnd + 1);
-    
-    try {
-      const result = JSON.parse(jsonString);
+    // Enhanced JSON parsing with fallback mechanisms
+    const parseJsonResponse = (responseText: string) => {
+      // Clean the response text
+      let cleanedText = responseText.trim();
       
-      // Validate the result has required fields
-      if (!result.solution || typeof result.adaptedLevel !== 'number') {
-        console.error('Invalid JSON structure:', result);
-        throw new Error('Invalid JSON structure: missing required fields');
+      // Remove markdown code blocks if present
+      cleanedText = cleanedText.replace(/^```json\s*/i, '').replace(/\s*```$/i, '');
+      cleanedText = cleanedText.replace(/^```\s*/i, '').replace(/\s*```$/i, '');
+      
+      // Try to find JSON object in the text
+      const jsonStart = cleanedText.indexOf('{');
+      const jsonEnd = cleanedText.lastIndexOf('}');
+      
+      if (jsonStart === -1 || jsonEnd === -1 || jsonStart > jsonEnd) {
+        console.error('No valid JSON structure found in text:', cleanedText);
+        throw new Error('Invalid response format: no JSON found');
       }
       
-      return result;
-    } catch (parseError) {
-      console.error('Failed to parse JSON:', jsonString);
-      console.error('Parse error:', parseError);
-      throw new Error('Invalid JSON in response');
-    }
+      let jsonString = cleanedText.substring(jsonStart, jsonEnd + 1);
+      
+      // First attempt: direct parsing
+      try {
+        const result = JSON.parse(jsonString);
+        
+        // Validate the result has required fields
+        if (!result.solution || typeof result.adaptedLevel !== 'number') {
+          console.error('Invalid JSON structure:', result);
+          throw new Error('Invalid JSON structure: missing required fields');
+        }
+        
+        return result;
+      } catch (parseError) {
+        console.log('Direct JSON parse failed, attempting to fix formatting...');
+        
+        // Second attempt: fix common JSON formatting issues
+        try {
+          // Fix unquoted keys
+          let fixedJson = jsonString.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":');
+          
+          // Fix single quotes to double quotes
+          fixedJson = fixedJson.replace(/'/g, '"');
+          
+          // Fix trailing commas
+          fixedJson = fixedJson.replace(/,(\s*[}\]])/g, '$1');
+          
+          const result = JSON.parse(fixedJson);
+          
+          // Validate the result has required fields
+          if (!result.solution || typeof result.adaptedLevel !== 'number') {
+            console.error('Invalid JSON structure after fixing:', result);
+            throw new Error('Invalid JSON structure: missing required fields');
+          }
+          
+          return result;
+        } catch (secondParseError) {
+          console.error('Failed to parse JSON even after fixing:', jsonString);
+          console.error('Original parse error:', parseError);
+          console.error('Second parse error:', secondParseError);
+          throw new Error('Invalid JSON in response');
+        }
+      }
+    };
+    
+    return parseJsonResponse(text);
   } catch (error) {
     console.error('Gemini API error:', error);
     if (error instanceof Error) {
