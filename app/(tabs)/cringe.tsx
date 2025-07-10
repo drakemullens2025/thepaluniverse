@@ -16,6 +16,9 @@ import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import AnimatedMeter from '@/components/AnimatedMeter';
 import { analyzeCringe, CringeAnalysis } from '@/lib/gemini';
+import PhotoMarkupModal from '@/components/PhotoMarkupModal';
+import { sharingService } from '@/lib/sharing';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function CringePalScreen() {
   const [input, setInput] = useState('');
@@ -26,6 +29,8 @@ export default function CringePalScreen() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [facing, setFacing] = useState<CameraType>('back');
   const [cameraRef, setCameraRef] = useState<any>(null);
+  const [showMarkupModal, setShowMarkupModal] = useState(false);
+  const { user } = useAuth();
 
   const handleAnalyze = async () => {
     if (!input.trim() && !selectedImage) {
@@ -93,6 +98,37 @@ export default function CringePalScreen() {
     if (!result.canceled) {
       setSelectedImage(result.assets[0].uri);
       setInput('Image selected for analysis');
+    }
+  };
+
+  const handleMarkupAndShare = async () => {
+    if (!analysis || !selectedImage) return;
+    
+    // Save creation locally/to database
+    try {
+      const creation = {
+        userId: user?.id || 'anonymous',
+        type: 'cringe' as const,
+        imageUri: selectedImage,
+        aiResponse: analysis.analysis,
+        metadata: {
+          hotLevel: analysis.hotLevel,
+          cringeLevel: analysis.cringeLevel,
+          tips: analysis.tips,
+        },
+        createdAt: new Date().toISOString(),
+      };
+      
+      if (user) {
+        await sharingService.saveCreationToDatabase(creation);
+      } else {
+        await sharingService.saveCreationLocally(creation);
+      }
+      
+      setShowMarkupModal(true);
+    } catch (error) {
+      console.error('Error saving creation:', error);
+      Alert.alert('Error', 'Failed to save creation');
     }
   };
 
@@ -228,6 +264,22 @@ export default function CringePalScreen() {
               <Text style={styles.analysisText}>{analysis.analysis}</Text>
             </View>
 
+            {/* Markup and Share Button */}
+            {selectedImage && (
+              <TouchableOpacity
+                style={styles.markupButton}
+                onPress={handleMarkupAndShare}
+              >
+                <LinearGradient
+                  colors={['#f093fb', '#f5576c']}
+                  style={styles.markupGradient}
+                >
+                  <Sparkles size={20} color="white" />
+                  <Text style={styles.markupButtonText}>Markup & Share</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            )}
+
             {analysis.tips && analysis.tips.length > 0 && (
               <View style={styles.tipsCard}>
                 <Text style={styles.tipsTitle}>💡 Tips to Reduce Cringe</Text>
@@ -259,6 +311,22 @@ export default function CringePalScreen() {
           ))}
         </View>
       </ScrollView>
+      
+      {/* Photo Markup Modal */}
+      {analysis && selectedImage && (
+        <PhotoMarkupModal
+          visible={showMarkupModal}
+          onClose={() => setShowMarkupModal(false)}
+          imageUri={selectedImage}
+          aiResponse={analysis.analysis}
+          responseType="cringe"
+          metadata={{
+            hotLevel: analysis.hotLevel,
+            cringeLevel: analysis.cringeLevel,
+            tips: analysis.tips,
+          }}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -469,6 +537,29 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     color: '#666',
     lineHeight: 20,
+  },
+  markupButton: {
+    borderRadius: 16,
+    marginTop: 16,
+    overflow: 'hidden',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+  },
+  markupGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    gap: 8,
+  },
+  markupButtonText: {
+    color: 'white',
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 16,
   },
   cameraContainer: {
     flex: 1,
