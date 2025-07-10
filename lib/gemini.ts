@@ -367,11 +367,9 @@ export interface NoteAnalysis {
 export async function generateHomeworkHelp(input: string, iqLevel: number, imageUri?: string): Promise<HomeworkAnalysis> {
   let parts: any[] = [];
   
-  // Use the same Gemini 2.5 Flash Preview model
   const model = 'gemini-2.5-flash-preview-05-20';
   const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
   
-  // Define IQ level personas
   const getPersona = (iq: number) => {
     if (iq <= 110) return {
       level: 'High School',
@@ -407,7 +405,6 @@ export async function generateHomeworkHelp(input: string, iqLevel: number, image
   
   const persona = getPersona(iqLevel);
   
-  // Build the prompt
   const promptText = `You are an intelligent homework assistant. Help with this ${imageUri ? 'homework image' : 'homework question'} by adapting your response to an IQ level of ${iqLevel} (${persona.level}).
         
 ${imageUri ? `Additional context: "${input}"` : `Question: "${input}"`}
@@ -443,11 +440,9 @@ CRITICAL: Return ONLY the JSON object with proper double quotes around all keys 
 
   if (imageUri) {
     try {
-      // For image analysis, convert the image to base64
       const response = await fetch(imageUri);
       const blob = await response.blob();
       
-      // Get the actual MIME type from the blob
       const mimeType = blob.type || 'image/jpeg';
       
       const base64 = await new Promise<string>((resolve, reject) => {
@@ -494,10 +489,10 @@ CRITICAL: Return ONLY the JSON object with proper double quotes around all keys 
           parts: parts
         }],
         generationConfig: {
-          temperature: 0.7, // Balanced creativity and accuracy for educational content
+          temperature: 0.7, 
           topK: 1,
           topP: 1,
-          maxOutputTokens: 8192, // Further increased to prevent truncation
+          maxOutputTokens: 8192, 
           candidateCount: 1,
           stopSequences: [],
         }
@@ -512,7 +507,6 @@ CRITICAL: Return ONLY the JSON object with proper double quotes around all keys 
 
     const data = await response.json();
     
-    // Validate response structure
     if (!data.candidates || !Array.isArray(data.candidates) || data.candidates.length === 0) {
       console.error('Invalid response structure - no candidates:', data);
       throw new Error('Invalid API response: no candidates');
@@ -530,29 +524,23 @@ CRITICAL: Return ONLY the JSON object with proper double quotes around all keys 
       throw new Error('Invalid API response: no text content');
     }
     
-    // Log the full response for debugging
     console.log('Full homework response:', text);
     
-    // Enhanced JSON parsing with fallback mechanisms
+    //FIXED: This inner function handles complex parsing and is now correctly structured.
     const parseJsonResponse = (responseText: string) => {
-      // Clean the response text
       let cleanedText = responseText.trim();
       
-      // Check if response appears to be truncated
       if (!cleanedText.endsWith('}') && !cleanedText.endsWith('"}')) {
         console.warn('Response appears to be truncated:', cleanedText.slice(-100));
-        // Try to find the last complete JSON object
         const lastBraceIndex = cleanedText.lastIndexOf('}');
         if (lastBraceIndex > 0) {
           cleanedText = cleanedText.substring(0, lastBraceIndex + 1);
         }
       }
       
-      // Remove markdown code blocks if present
       cleanedText = cleanedText.replace(/^```json\s*/i, '').replace(/\s*```$/i, '');
       cleanedText = cleanedText.replace(/^```\s*/i, '').replace(/\s*```$/i, '');
       
-      // Try to find JSON object in the text
       const jsonStart = cleanedText.indexOf('{');
       const jsonEnd = cleanedText.lastIndexOf('}');
       
@@ -563,11 +551,9 @@ CRITICAL: Return ONLY the JSON object with proper double quotes around all keys 
       
       let jsonString = cleanedText.substring(jsonStart, jsonEnd + 1);
       
-      // First attempt: direct parsing
       try {
         const result = JSON.parse(jsonString);
         
-        // Validate the result has required fields
         if (!result.solution || typeof result.adaptedLevel !== 'number') {
           console.error('Invalid JSON structure:', result);
           throw new Error('Invalid JSON structure: missing required fields');
@@ -577,35 +563,25 @@ CRITICAL: Return ONLY the JSON object with proper double quotes around all keys 
       } catch (parseError) {
         console.log('Direct JSON parse failed, attempting to fix formatting...');
         
-        // Second attempt: fix common JSON formatting issues
         try {
-          // Handle truncated strings by closing them
           if (jsonString.match(/:\s*"[^"]*$/)) {
             jsonString = jsonString.replace(/:\s*"[^"]*$/, ': "Response truncated"');
           }
           
-          // Handle incomplete arrays
           if (jsonString.match(/:\s*\[[^\]]*$/)) {
             jsonString = jsonString.replace(/:\s*\[[^\]]*$/, ': []');
           }
           
-          // Fix unquoted keys
           let fixedJson = jsonString.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":');
-          
-          // Fix single quotes to double quotes
           fixedJson = fixedJson.replace(/'/g, '"');
-          
-          // Fix trailing commas
           fixedJson = fixedJson.replace(/,(\s*[}\]])/g, '$1');
           
-          // Ensure the JSON ends properly
           if (!fixedJson.endsWith('}')) {
             fixedJson += '}';
           }
           
           const result = JSON.parse(fixedJson);
           
-          // Validate the result has required fields
           if (!result.solution || typeof result.adaptedLevel !== 'number') {
             console.error('Invalid JSON structure after fixing:', result);
             throw new Error('Invalid JSON structure: missing required fields');
@@ -613,7 +589,6 @@ CRITICAL: Return ONLY the JSON object with proper double quotes around all keys 
           
           return result;
         } catch (secondParseError) {
-          // Third attempt: Create a minimal valid response
           console.log('All parsing attempts failed, creating fallback response');
           return {
             solution: "I apologize, but I encountered an issue processing your homework question. Please try again with a shorter question or break it into smaller parts.",
@@ -625,14 +600,8 @@ CRITICAL: Return ONLY the JSON object with proper double quotes around all keys 
         }
       }
     };
-          console.error('Failed to parse JSON even after fixing:', jsonString);
-          console.error('Original parse error:', parseError);
-          console.error('Second parse error:', secondParseError);
-          throw new Error('Invalid JSON in response');
-        }
-      }
-    };
     
+    //FIXED: Removed the misplaced code block and now call the parsing function correctly.
     return parseJsonResponse(text);
   } catch (error) {
     console.error('Gemini API error:', error);
@@ -651,7 +620,6 @@ export async function processNote(
 ): Promise<NoteAnalysis> {
   let parts: any[] = [];
   
-  // Use the same Gemini 2.5 Flash Preview model
   const model = 'gemini-2.5-flash-preview-05-20';
   const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
   
@@ -723,11 +691,9 @@ IMPORTANT: Return ONLY the JSON object, no other text or formatting.`;
 
   if (imageUri && action === 'textify') {
     try {
-      // For image analysis, convert the image to base64
       const response = await fetch(imageUri);
       const blob = await response.blob();
       
-      // Get the actual MIME type from the blob
       const mimeType = blob.type || 'image/jpeg';
       
       const base64 = await new Promise<string>((resolve, reject) => {
@@ -763,6 +729,7 @@ IMPORTANT: Return ONLY the JSON object, no other text or formatting.`;
     parts = [{ text: promptText }];
   }
 
+  // FIXED: The `try...catch` block is now correctly structured.
   try {
     const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
       method: 'POST',
@@ -774,7 +741,7 @@ IMPORTANT: Return ONLY the JSON object, no other text or formatting.`;
           parts: parts
         }],
         generationConfig: {
-          temperature: 0.3, // Lower temperature for more accurate transcription/analysis
+          temperature: 0.3,
           topK: 1,
           topP: 1,
           maxOutputTokens: 2048,
@@ -792,7 +759,6 @@ IMPORTANT: Return ONLY the JSON object, no other text or formatting.`;
 
     const data = await response.json();
     
-    // Validate response structure
     if (!data.candidates || !Array.isArray(data.candidates) || data.candidates.length === 0) {
       console.error('Invalid response structure - no candidates:', data);
       throw new Error('Invalid API response: no candidates');
@@ -810,20 +776,13 @@ IMPORTANT: Return ONLY the JSON object, no other text or formatting.`;
       throw new Error('Invalid API response: no text content');
     }
     
-    // Log the full response for debugging
     console.log('Full note processing response:', text);
     
- 
-  }
-}
-  }
-}   // Clean the response text
+    // FIXED: The parsing logic is now correctly placed inside the `try` block.
     let cleanedText = text.trim();
     
-    // Remove markdown code blocks if present
     cleanedText = cleanedText.replace(/^```json\s*/i, '').replace(/\s*```$/i, '');
     
-    // Try to find JSON object in the text
     const jsonStart = cleanedText.indexOf('{');
     const jsonEnd = cleanedText.lastIndexOf('}');
     
@@ -837,7 +796,6 @@ IMPORTANT: Return ONLY the JSON object, no other text or formatting.`;
     try {
       const result = JSON.parse(jsonString);
       
-      // Validate the result has required fields based on action
       if (action === 'textify' && !result.digitalText) {
         console.error('Invalid JSON structure for textify:', result);
         throw new Error('Invalid JSON structure: missing digitalText');
@@ -864,3 +822,4 @@ IMPORTANT: Return ONLY the JSON object, no other text or formatting.`;
     }
     throw new Error('Failed to process note. Please try again.');
   }
+}
