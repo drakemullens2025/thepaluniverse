@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -8,6 +8,7 @@ import Animated, {
   withTiming,
   interpolateColor,
   interpolate,
+  runOnJS,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -29,20 +30,36 @@ export default function IQSlider({
   min = 100, 
   max = 160 
 }: IQSliderProps) {
+  const [sliderWidth, setSliderWidth] = useState(SLIDER_WIDTH);
   const translateX = useSharedValue(0);
   const scale = useSharedValue(1);
   const geniusGlow = useSharedValue(0);
   const brainPulse = useSharedValue(1);
+  const isDragging = useSharedValue(false);
+  const dragStartX = useSharedValue(0);
+
+  // Ensure value is within bounds
+  const safeValue = Math.max(min, Math.min(max, value));
+
+  // Calculate position from value
+  const positionForValue = (val: number): number => {
+    'worklet';
+    if (sliderWidth <= 0) return 0;
+    const usableWidth = sliderWidth - THUMB_SIZE;
+    return ((val - min) / (max - min)) * usableWidth;
+  };
 
   // Initialize position based on value
   useEffect(() => {
-    const position = ((value - min) / (max - min)) * (SLIDER_WIDTH - THUMB_SIZE);
-    translateX.value = withSpring(position);
-  }, [value, min, max]);
+    if (sliderWidth > 0) {
+      const position = positionForValue(safeValue);
+      translateX.value = withSpring(position, { damping: 15, stiffness: 150 });
+    }
+  }, [safeValue, sliderWidth]);
 
   // Genius zone animations (150+ IQ)
   useEffect(() => {
-    if (value >= 150) {
+    if (safeValue >= 150) {
       geniusGlow.value = withRepeat(
         withTiming(1, { duration: 1200 }),
         -1,
@@ -57,35 +74,58 @@ export default function IQSlider({
       geniusGlow.value = withTiming(0);
       brainPulse.value = withTiming(1);
     }
-  }, [value]);
+  }, [safeValue]);
 
+  // Handle value change with JS thread safety
+  const onValueChangeJS = (newValue: number) => {
+    if (newValue !== safeValue) {
+      onValueChange(newValue);
+    }
+  };
+
+  // Pan gesture for dragging - using the same pattern as IntensitySlider
   const panGesture = Gesture.Pan()
+    .hitSlop(20)
     .onStart(() => {
+      isDragging.value = true;
       scale.value = withSpring(1.2);
+      dragStartX.value = positionForValue(safeValue);
     })
     .onUpdate((event) => {
-      const newX = Math.max(0, Math.min(SLIDER_WIDTH - THUMB_SIZE, event.translationX + translateX.value));
-      translateX.value = newX;
+      const usableWidth = sliderWidth - THUMB_SIZE;
+      const newPosition = Math.max(0, Math.min(usableWidth, dragStartX.value + event.translationX));
+      translateX.value = newPosition;
       
-      // Calculate new value
-      const newValue = Math.round(min + (newX / (SLIDER_WIDTH - THUMB_SIZE)) * (max - min));
-      if (newValue !== value) {
-        onValueChange(newValue);
-      }
+      const newValue = Math.round(min + (newPosition / usableWidth) * (max - min));
+      runOnJS(onValueChangeJS)(newValue);
     })
     .onEnd(() => {
+      isDragging.value = false;
       scale.value = withSpring(1);
-      const finalPosition = ((value - min) / (max - min)) * (SLIDER_WIDTH - THUMB_SIZE);
-      translateX.value = withSpring(finalPosition);
+      translateX.value = withSpring(positionForValue(safeValue));
     });
 
+  // Tap gesture for direct setting
+  const tapGesture = Gesture.Tap()
+    .onEnd((event) => {
+      const usableWidth = sliderWidth - THUMB_SIZE;
+      const newPosition = Math.max(0, Math.min(usableWidth, event.x - THUMB_SIZE / 2));
+      const newValue = Math.round(min + (newPosition / usableWidth) * (max - min));
+      runOnJS(onValueChangeJS)(newValue);
+    });
+
+  const composedGesture = Gesture.Race(tapGesture, panGesture);
+
   const thumbStyle = useAnimatedStyle(() => {
-    const progress = translateX.value / (SLIDER_WIDTH - THUMB_SIZE);
+    const progress = sliderWidth > 0 ? translateX.value / (sliderWidth - THUMB_SIZE) : 0;
     
     return {
       transform: [
         { translateX: translateX.value },
-        { scale: scale.value * brainPulse.value }
+        { scale: isDragging.value 
+          ? scale.value 
+          : brainPulse.value 
+        }
       ],
       backgroundColor: interpolateColor(
         progress,
@@ -103,7 +143,7 @@ export default function IQSlider({
   });
 
   const trackStyle = useAnimatedStyle(() => {
-    const progress = translateX.value / (SLIDER_WIDTH - THUMB_SIZE);
+    const progress = sliderWidth > 0 ? translateX.value / (sliderWidth - THUMB_SIZE) : 0;
     
     return {
       backgroundColor: interpolateColor(
@@ -132,7 +172,7 @@ export default function IQSlider({
     return { text: 'Genius Level', emoji: '🌟', color: '#FFD700', description: 'Cutting-edge intellectual complexity' };
   };
 
-  const currentLabel = getIQLabel(value);
+  const currentLabel = getIQLabel(safeValue);
 
   return (
     <View style={styles.container}>
@@ -140,13 +180,13 @@ export default function IQSlider({
         <Text style={[styles.iqLabel, { color: currentLabel.color }]}>
           {currentLabel.emoji} {currentLabel.text}
         </Text>
-        <Text style={styles.iqValue}>IQ {value}</Text>
+        <Text style={styles.iqValue}>IQ {safeValue}</Text>
         <Text style={styles.description}>{currentLabel.description}</Text>
       </View>
 
       <View style={styles.sliderContainer}>
         {/* Genius Zone Indicator */}
-        {value >= 150 && (
+        {safeValue >= 150 && (
           <Animated.View style={[styles.geniusZone, geniusZoneStyle]}>
             <LinearGradient
               colors={['rgba(255, 215, 0, 0.1)', 'rgba(255, 215, 0, 0.3)']}
@@ -158,37 +198,42 @@ export default function IQSlider({
         )}
 
         {/* Slider Track */}
-        <Animated.View style={[styles.track, trackStyle]}>
-          <LinearGradient
-            colors={['#4CAF50', '#2196F3', '#9C27B0', '#FF9800', '#FFD700']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.gradientTrack}
-          />
-        </Animated.View>
+        <GestureDetector gesture={composedGesture}>
+          <View
+            style={styles.trackContainer}
+            onLayout={(e) => setSliderWidth(e.nativeEvent.layout.width)}
+          >
+            <Animated.View style={[styles.track, trackStyle]}>
+              <LinearGradient
+                colors={['#4CAF50', '#2196F3', '#9C27B0', '#FF9800', '#FFD700']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.gradientTrack}
+              />
+            </Animated.View>
 
-        {/* Slider Thumb */}
-        <GestureDetector gesture={panGesture}>
-          <Animated.View style={[styles.thumb, thumbStyle]}>
-            <Text style={styles.thumbEmoji}>{currentLabel.emoji}</Text>
-          </Animated.View>
+            {/* IQ Level Markers */}
+            <View style={styles.markersContainer} pointerEvents="none">
+              {[100, 115, 130, 145, 160].map((level, index) => (
+                <View
+                  key={level}
+                  style={[
+                    styles.marker,
+                    {
+                      left: `${(index / 4) * 100}%`,
+                      backgroundColor: safeValue >= level ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.2)',
+                    }
+                  ]}
+                />
+              ))}
+            </View>
+
+            {/* Slider Thumb */}
+            <Animated.View style={[styles.thumb, thumbStyle]}>
+              <Text style={styles.thumbEmoji}>{currentLabel.emoji}</Text>
+            </Animated.View>
+          </View>
         </GestureDetector>
-
-        {/* IQ Level Markers */}
-        <View style={styles.markersContainer}>
-          {[100, 115, 130, 145, 160].map((level) => (
-            <View
-              key={level}
-              style={[
-                styles.marker,
-                {
-                  left: ((level - min) / (max - min)) * (SLIDER_WIDTH - THUMB_SIZE) + THUMB_SIZE / 2 - 1,
-                  backgroundColor: value >= level ? currentLabel.color : '#ddd',
-                }
-              ]}
-            />
-          ))}
-        </View>
       </View>
 
       {/* IQ Range Descriptions */}
@@ -200,23 +245,23 @@ export default function IQSlider({
       {/* Academic Level Indicators */}
       <View style={styles.academicLevels}>
         <View style={styles.levelIndicator}>
-          <View style={[styles.levelDot, { backgroundColor: value >= 100 ? '#4CAF50' : '#ddd' }]} />
+          <View style={[styles.levelDot, { backgroundColor: safeValue >= 100 ? '#4CAF50' : '#ddd' }]} />
           <Text style={styles.levelText}>HS</Text>
         </View>
         <View style={styles.levelIndicator}>
-          <View style={[styles.levelDot, { backgroundColor: value >= 115 ? '#2196F3' : '#ddd' }]} />
+          <View style={[styles.levelDot, { backgroundColor: safeValue >= 115 ? '#2196F3' : '#ddd' }]} />
           <Text style={styles.levelText}>College</Text>
         </View>
         <View style={styles.levelIndicator}>
-          <View style={[styles.levelDot, { backgroundColor: value >= 130 ? '#9C27B0' : '#ddd' }]} />
+          <View style={[styles.levelDot, { backgroundColor: safeValue >= 130 ? '#9C27B0' : '#ddd' }]} />
           <Text style={styles.levelText}>Advanced</Text>
         </View>
         <View style={styles.levelIndicator}>
-          <View style={[styles.levelDot, { backgroundColor: value >= 145 ? '#FF9800' : '#ddd' }]} />
+          <View style={[styles.levelDot, { backgroundColor: safeValue >= 145 ? '#FF9800' : '#ddd' }]} />
           <Text style={styles.levelText}>Graduate</Text>
         </View>
         <View style={styles.levelIndicator}>
-          <View style={[styles.levelDot, { backgroundColor: value >= 160 ? '#FFD700' : '#ddd' }]} />
+          <View style={[styles.levelDot, { backgroundColor: safeValue >= 160 ? '#FFD700' : '#ddd' }]} />
           <Text style={styles.levelText}>Genius</Text>
         </View>
       </View>
@@ -227,6 +272,7 @@ export default function IQSlider({
 const styles = StyleSheet.create({
   container: {
     paddingVertical: 20,
+    width: '100%',
   },
   labelContainer: {
     alignItems: 'center',
@@ -279,12 +325,18 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Bold',
     textAlign: 'center',
   },
+  trackContainer: {
+    width: '100%',
+    height: 60,
+    justifyContent: 'center',
+    position: 'relative',
+    zIndex: 1,
+  },
   track: {
     height: 12,
     borderRadius: 6,
     backgroundColor: '#E0E0E0',
     position: 'relative',
-    zIndex: 1,
   },
   gradientTrack: {
     height: '100%',
@@ -302,24 +354,27 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
-    zIndex: 3,
     borderWidth: 3,
     borderColor: 'white',
+    top: '50%',
+    marginTop: -THUMB_SIZE / 2,
   },
   thumbEmoji: {
     fontSize: 22,
   },
   markersContainer: {
     position: 'absolute',
-    width: '100%',
+    left: THUMB_SIZE / 2,
+    right: THUMB_SIZE / 2,
     height: 12,
-    zIndex: 2,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   marker: {
-    position: 'absolute',
     width: 2,
-    height: 12,
-    backgroundColor: '#ddd',
+    height: '100%',
+    borderRadius: 1,
   },
   descriptionsContainer: {
     flexDirection: 'row',
