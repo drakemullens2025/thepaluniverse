@@ -46,6 +46,7 @@ export default function NotePalScreen() {
   const [loading, setLoading] = useState(false);
   const [mainNote, setMainNote] = useState('');
   const [textInput, setTextInput] = useState('');
+  const [cameraRef, setCameraRef] = useState<any>(null);
 
   // Action selection state
   const [selectedActions, setSelectedActions] = useState<Set<string>>(new Set(['textify']));
@@ -88,10 +89,10 @@ export default function NotePalScreen() {
     setShowCamera(true);
   };
 
-  const takePicture = async (camera: any) => {
-    if (camera) {
+  const takePicture = async () => {
+    if (cameraRef) {
       try {
-        const photo = await camera.takePictureAsync({
+        const photo = await cameraRef.takePictureAsync({
           quality: 0.7,
           base64: false,
         });
@@ -428,7 +429,11 @@ export default function NotePalScreen() {
   if (showCamera) {
     return (
       <View style={styles.cameraContainer}>
-        <CameraView style={styles.camera} facing="back">
+        <CameraView 
+          style={styles.camera} 
+          facing="back"
+          ref={setCameraRef}
+        >
           <View style={styles.cameraOverlay}>
             <TouchableOpacity
               style={styles.closeButton}

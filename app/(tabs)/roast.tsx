@@ -33,6 +33,7 @@ export default function RoastaPalScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [facing, setFacing] = useState<CameraType>('back');
+  const [cameraRef, setCameraRef] = useState<any>(null);
 
   // --- Handlers for App Logic ---
 
@@ -86,10 +87,10 @@ export default function RoastaPalScreen() {
     setShowCamera(true);
   };
 
-  const takePicture = async (camera: any) => {
-    if (camera) {
+  const takePicture = async () => {
+    if (cameraRef) {
       try {
-        const photo = await camera.takePictureAsync({
+        const photo = await cameraRef.takePictureAsync({
           quality: 0.7,
           base64: false,
         });
@@ -136,7 +137,11 @@ export default function RoastaPalScreen() {
   if (showCamera) {
     return (
       <View style={styles.cameraContainer}>
-        <CameraView style={styles.camera} facing={facing}>
+        <CameraView 
+          style={styles.camera} 
+          facing={facing}
+          ref={setCameraRef}
+        >
           <View style={styles.cameraOverlay}>
             <TouchableOpacity
               style={styles.closeButton}

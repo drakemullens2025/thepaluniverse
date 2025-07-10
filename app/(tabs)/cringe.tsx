@@ -15,7 +15,6 @@ import { Camera, Send, Sparkles, RotateCcw } from 'lucide-react-native';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import AnimatedMeter from '@/components/AnimatedMeter';
-import LoadingSpinner from '@/components/LoadingSpinner';
 import { analyzeCringe, CringeAnalysis } from '@/lib/gemini';
 
 export default function CringePalScreen() {
@@ -26,6 +25,7 @@ export default function CringePalScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [facing, setFacing] = useState<CameraType>('back');
+  const [cameraRef, setCameraRef] = useState<any>(null);
 
   const handleAnalyze = async () => {
     if (!input.trim() && !selectedImage) {
@@ -55,10 +55,10 @@ export default function CringePalScreen() {
     setShowCamera(true);
   };
 
-  const takePicture = async (camera: any) => {
-    if (camera) {
+  const takePicture = async () => {
+    if (cameraRef) {
       try {
-        const photo = await camera.takePictureAsync({
+        const photo = await cameraRef.takePictureAsync({
           quality: 0.7,
           base64: false,
         });
@@ -104,7 +104,11 @@ export default function CringePalScreen() {
   if (showCamera) {
     return (
       <View style={styles.cameraContainer}>
-        <CameraView style={styles.camera} facing={facing}>
+        <CameraView 
+          style={styles.camera} 
+          facing={facing}
+          ref={setCameraRef}
+        >
           <View style={styles.cameraOverlay}>
             <TouchableOpacity
               style={styles.closeButton}

@@ -26,6 +26,7 @@ export default function HomeworkPalScreen() {
   const [showCamera, setShowCamera] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [cameraRef, setCameraRef] = useState<any>(null);
 
   const handleAnalyze = async () => {
     if (!input.trim() && !selectedImage) {
@@ -78,6 +79,22 @@ export default function HomeworkPalScreen() {
     }
   };
 
+  const takePicture = async () => {
+    if (cameraRef) {
+      try {
+        const photo = await cameraRef.takePictureAsync({
+          quality: 0.7,
+          base64: false,
+        });
+        setSelectedImage(photo.uri);
+        setInput('Photo captured for homework help');
+        setShowCamera(false);
+      } catch (error) {
+        Alert.alert('Error', 'Failed to take picture');
+      }
+    }
+  };
+
   const clearImage = () => {
     setSelectedImage(null);
     if (input === 'Image uploaded for homework help') {
@@ -88,7 +105,11 @@ export default function HomeworkPalScreen() {
   if (showCamera) {
     return (
       <View style={styles.cameraContainer}>
-        <CameraView style={styles.camera} facing="back">
+        <CameraView 
+          style={styles.camera} 
+          facing="back"
+          ref={setCameraRef}
+        >
           <View style={styles.cameraOverlay}>
             <TouchableOpacity
               style={styles.closeButton}
@@ -97,7 +118,10 @@ export default function HomeworkPalScreen() {
               <Text style={styles.closeButtonText}>✕</Text>
             </TouchableOpacity>
             <View style={styles.cameraControls}>
-              <TouchableOpacity style={styles.captureButton}>
+              <TouchableOpacity 
+                style={styles.captureButton}
+                onPress={takePicture}
+              >
                 <View style={styles.captureButtonInner} />
               </TouchableOpacity>
             </View>
