@@ -56,30 +56,12 @@ export default function AuthHeader({ onAuthPress }: AuthHeaderProps) {
 
   // Logged-out state: Logo + CTA
   return (
-    <View style={styles.container}>
-      {/* Stick figure logo */}
-      <View style={styles.logoContainer}>
-        <Image 
-          source={require('@/assets/images/logo.png')} 
-          style={styles.stickFigureImage}
-          resizeMode="contain"
-        />
-      </View>
-      
-      {/* Hook text and CTA button in column */}
-      <View style={styles.textContainer}>
-        <Text style={styles.hookText}>Brave enough?</Text>
-        <Animated.View style={buttonStyle}>
-          <TouchableOpacity style={styles.ctaButton} onPress={handlePress}>
-            <LinearGradient
-              colors={['#667eea', '#764ba2']}
-              style={styles.ctaGradient}
-            >
-              <Text style={styles.ctaText}>Start Here</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        </Animated.View>
-      </View>
+    <View style={styles.logoOnlyContainer}>
+      <Image 
+        source={require('@/assets/images/logo.png')} 
+        style={styles.stickFigureImage}
+        resizeMode="contain"
+      />
     </View>
   );
 }
@@ -94,56 +76,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
-  logoContainer: {
-    width: 40,
-    height: 40,
+  logoOnlyContainer: {
+    position: 'absolute',
+    top: 16,
+    left: 16,
+    zIndex: 10,
+    width: 32,
+    height: 32,
     justifyContent: 'center',
     alignItems: 'center',
   },
   stickFigureImage: {
-    width: 36,
-    height: 36,
-    // Remove tintColor to show the original black stick figure
-  },
-  textContainer: {
-    alignItems: 'flex-start',
-    gap: 6,
-  },
-  hookText: {
-    fontSize: 13,
-    fontFamily: 'Inter-Medium',
-    color: 'white',
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-  },
-  ctaButton: {
-    borderRadius: 16,
-    overflow: 'hidden',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-  },
-  ctaGradient: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-  },
-  ctaText: {
-    color: 'white',
-    fontSize: 11,
-    fontFamily: 'Inter-SemiBold',
-    textAlign: 'center',
+    width: 28,
+    height: 28,
   },
   profileContainer: {
+    position: 'absolute',
+    top: 16,
+    left: 16,
+    zIndex: 10,
     alignItems: 'center',
-    position: 'relative',
   },
   profileCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
     justifyContent: 'center',
     alignItems: 'center',
@@ -154,7 +111,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   profileInitials: {
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: 'Inter-Bold',
     color: '#667eea',
   },

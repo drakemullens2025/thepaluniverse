@@ -5,9 +5,12 @@ import { router } from 'expo-router';
 import PalCard from '@/components/PalCard';
 import AuthHeader from '@/components/AuthHeader';
 import AuthModal from '@/components/AuthModal';
+import { useAuth } from '@/contexts/AuthContext';
+import { TouchableOpacity } from 'react-native';
 
 export default function HomeScreen() {
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const { user } = useAuth();
 
   // Pals have been reordered and icons/statuses updated as requested.
   const pals = [
@@ -64,6 +67,24 @@ export default function HomeScreen() {
         <Text style={styles.subtitle}>Your AI pals for every task</Text>
       </LinearGradient>
       
+      {/* Auth CTA Section - only show when not logged in */}
+      {!user && (
+        <View style={styles.authCTASection}>
+          <Text style={styles.hookText}>Brave enough?</Text>
+          <TouchableOpacity 
+            style={styles.ctaButton} 
+            onPress={() => setShowAuthModal(true)}
+          >
+            <LinearGradient
+              colors={['#667eea', '#764ba2']}
+              style={styles.ctaGradient}
+            >
+              <Text style={styles.ctaText}>Start Here</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+      )}
+      
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.sectionTitle}>Choose Your Pal</Text>
         {pals.map((pal, index) => (
@@ -95,12 +116,44 @@ const styles = StyleSheet.create({
   // Header styles updated for a more compact design
   header: {
     paddingHorizontal: 32,
-    paddingTop: 80, // Increased to give space for AuthHeader
-    paddingBottom: 32,
+    paddingTop: 60, // Reduced header padding
+    paddingBottom: 24, // Reduced bottom padding
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
     position: 'relative',
     alignItems: 'center',
+  },
+  authCTASection: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    gap: 12,
+  },
+  hookText: {
+    fontSize: 16,
+    fontFamily: 'Inter-Medium',
+    color: '#667eea',
+  },
+  ctaButton: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  ctaGradient: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  ctaText: {
+    color: 'white',
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    textAlign: 'center',
   },
   title: {
     fontSize: 28, // Slightly smaller for mobile
