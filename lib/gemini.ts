@@ -813,7 +813,9 @@ IMPORTANT: Return ONLY the JSON object, no other text or formatting.`;
     // Log the full response for debugging
     console.log('Full note processing response:', text);
     
-    // Clean the response text
+ 
+  }
+}   // Clean the response text
     let cleanedText = text.trim();
     
     // Remove markdown code blocks if present
