@@ -268,12 +268,14 @@ const styles = StyleSheet.create({
   },
   keyboardView: {
     justifyContent: 'flex-end',
+    flex: 1,
   },
   modal: {
     backgroundColor: 'white',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    maxHeight: '90%',
+    maxHeight: '95%',
+    minHeight: '60%',
     overflow: 'hidden',
   },
   header: {
@@ -313,10 +315,11 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   content: {
-    flex: 1,
+    maxHeight: 400, // Set a fixed max height for the scrollable content
   },
   form: {
     padding: 24,
+    paddingBottom: 40, // Extra bottom padding for better spacing
   },
   errorContainer: {
     backgroundColor: '#ffebee',
