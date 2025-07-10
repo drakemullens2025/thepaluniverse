@@ -57,17 +57,18 @@ export default function AuthHeader({ onAuthPress }: AuthHeaderProps) {
   // Logged-out state: Logo + CTA
   return (
     <View style={styles.container}>
-      <View style={styles.hookContainer}>
-        {/* Stick figure logo using the provided image */}
-        <View style={styles.logoContainer}>
-          <Image 
-            source={require('@/assets/images/logo.png')} 
-            style={styles.stickFigureImage}
-            resizeMode="contain"
-          />
-          <Text style={styles.hookText}>Brave enough?</Text>
-        </View>
-        
+      {/* Stick figure logo */}
+      <View style={styles.logoContainer}>
+        <Image 
+          source={require('@/assets/images/logo.png')} 
+          style={styles.stickFigureImage}
+          resizeMode="contain"
+        />
+      </View>
+      
+      {/* Hook text and CTA button in column */}
+      <View style={styles.textContainer}>
+        <Text style={styles.hookText}>Brave enough?</Text>
         <Animated.View style={buttonStyle}>
           <TouchableOpacity style={styles.ctaButton} onPress={handlePress}>
             <LinearGradient
@@ -86,50 +87,52 @@ export default function AuthHeader({ onAuthPress }: AuthHeaderProps) {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    top: 20,
-    left: 20,
+    top: 16,
+    left: 16,
     zIndex: 10,
-  },
-  hookContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8, // Space between logo and CTA
+    gap: 12,
   },
   logoContainer: {
-    flexDirection: 'row',
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 8,
   },
   stickFigureImage: {
-    width: 32,
-    height: 32,
-    tintColor: 'white', // Apply white tint for visibility against gradient
+    width: 36,
+    height: 36,
+    // Remove tintColor to show the original black stick figure
+  },
+  textContainer: {
+    alignItems: 'flex-start',
+    gap: 6,
   },
   hookText: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: 'Inter-Medium',
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: 'white',
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
   ctaButton: {
-    borderRadius: 20,
+    borderRadius: 16,
     overflow: 'hidden',
     elevation: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
-    marginLeft: 'auto', // Align right within hookContainer
   },
   ctaGradient: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
   },
   ctaText: {
     color: 'white',
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: 'Inter-SemiBold',
     textAlign: 'center',
   },

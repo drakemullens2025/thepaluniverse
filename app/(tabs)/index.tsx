@@ -95,35 +95,38 @@ const styles = StyleSheet.create({
   // Header styles updated for a more compact design
   header: {
     paddingHorizontal: 32,
-    paddingTop: 20, 
-    paddingBottom: 24,
+    paddingTop: 80, // Increased to give space for AuthHeader
+    paddingBottom: 32,
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
     position: 'relative',
     alignItems: 'center',
   },
   title: {
-    fontSize: 32,
+    fontSize: 28, // Slightly smaller for mobile
     fontFamily: 'Inter-Bold',
     color: 'white',
     textAlign: 'center',
-    marginBottom: 4, // Reduced margin
+    marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 15, // Slightly smaller for mobile
     fontFamily: 'Inter-Regular',
     color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'center',
+    paddingHorizontal: 20, // Add padding to prevent text from touching edges
+    lineHeight: 22,
   },
   content: {
     flex: 1,
-    padding: 20,
+    paddingHorizontal: 16, // Reduced horizontal padding for mobile
+    paddingVertical: 20,
   },
   sectionTitle: {
-    fontSize: 24,
+    fontSize: 22, // Slightly smaller for mobile
     fontFamily: 'Inter-Bold',
     color: '#1a1a1a',
-    marginBottom: 20,
+    marginBottom: 16,
     textAlign: 'center',
   },
 });

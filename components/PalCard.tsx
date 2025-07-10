@@ -33,7 +33,7 @@ export default function PalCard({ title, description, icon, gradient, onPress, i
 const styles = StyleSheet.create({
   container: {
     borderRadius: 20,
-    marginVertical: 8,
+    marginVertical: 6, // Reduced margin for tighter spacing
     elevation: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -42,40 +42,40 @@ const styles = StyleSheet.create({
   },
   gradient: {
     borderRadius: 20,
-    padding: 20,
-    minHeight: 120,
+    padding: 16, // Reduced padding for mobile
+    minHeight: 100, // Reduced height for mobile
   },
   content: {
     flex: 1,
     justifyContent: 'center',
   },
   icon: {
-    fontSize: 32,
-    marginBottom: 8,
+    fontSize: 28, // Slightly smaller icon
+    marginBottom: 6,
   },
   title: {
-    fontSize: 20,
+    fontSize: 18, // Smaller title for mobile
     fontWeight: 'bold',
     color: 'white',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   description: {
-    fontSize: 14,
+    fontSize: 13, // Smaller description
     color: 'rgba(255, 255, 255, 0.9)',
-    lineHeight: 20,
+    lineHeight: 18,
   },
   comingSoonBadge: {
     position: 'absolute',
-    top: 10,
-    right: 10,
+    top: 8,
+    right: 8,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
     borderRadius: 12,
   },
   comingSoonText: {
     color: 'white',
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '600',
   },
 });
