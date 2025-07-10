@@ -78,17 +78,17 @@ const styles = StyleSheet.create({
   },
   logoOnlyContainer: {
     position: 'absolute',
-    top: 16,
-    left: 16,
+    top: 20,
+    right: 20,
     zIndex: 10,
-    width: 32,
-    height: 32,
+    width: 48,
+    height: 48,
     justifyContent: 'center',
     alignItems: 'center',
   },
   stickFigureImage: {
-    width: 28,
-    height: 28,
+    width: 42,
+    height: 42,
   },
   profileContainer: {
     position: 'absolute',

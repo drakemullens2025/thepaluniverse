@@ -116,12 +116,14 @@ const styles = StyleSheet.create({
   // Header styles updated for a more compact design
   header: {
     paddingHorizontal: 32,
-    paddingTop: 20, 
-    paddingBottom: 24,
+    paddingTop: 16, 
+    paddingBottom: 16,
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
     position: 'relative',
+    justifyContent: 'flex-end',
     alignItems: 'center',
+    minHeight: 120,
   },
   authCTASection: {
     flexDirection: 'row',
@@ -132,7 +134,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   hookText: {
-    fontSize: 16,
+    fontSize: 20,
     fontFamily: 'Inter-Medium',
     color: '#667eea',
   },
@@ -156,19 +158,19 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   title: {
-    fontSize: 28, // Slightly smaller for mobile
+    fontSize: 26,
     fontFamily: 'Inter-Bold',
     color: 'white',
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   subtitle: {
-    fontSize: 15, // Slightly smaller for mobile
+    fontSize: 14,
     fontFamily: 'Inter-Regular',
     color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'center',
     paddingHorizontal: 20, // Add padding to prevent text from touching edges
-    lineHeight: 22,
+    lineHeight: 20,
   },
   content: {
     flex: 1,
