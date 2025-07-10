@@ -125,16 +125,16 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
       statusBarTranslucent
     >
       <Animated.View style={[styles.backdrop, backdropStyle]}>
-        <TouchableOpacity 
-          style={styles.backdropTouch} 
-          activeOpacity={1} 
-          onPress={onClose}
-        />
-        
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.keyboardView}
         >
+          <TouchableOpacity 
+            style={styles.backdropTouch} 
+            activeOpacity={1} 
+            onPress={onClose}
+          />
+          
           <Animated.View style={[styles.modal, modalStyle]}>
             <LinearGradient
               colors={['#667eea', '#764ba2']}
@@ -261,32 +261,30 @@ const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
   },
   backdropTouch: {
     flex: 1,
   },
   keyboardView: {
-    justifyContent: 'flex-end',
     flex: 1,
+    justifyContent: 'flex-end',
   },
   modal: {
     backgroundColor: 'white',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: '95%',
-    minHeight: '60%',
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    height: '100%',
     overflow: 'hidden',
   },
   header: {
     paddingHorizontal: 24,
-    paddingTop: 16,
+    paddingTop: 60, // Add top padding for status bar
     paddingBottom: 32,
     position: 'relative',
   },
   closeButton: {
     position: 'absolute',
-    top: 16,
+    top: 60, // Adjust for status bar
     right: 16,
     width: 40,
     height: 40,
@@ -315,11 +313,11 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   content: {
-    maxHeight: 400, // Set a fixed max height for the scrollable content
+    flex: 1, // Allow content to expand
   },
   form: {
     padding: 24,
-    paddingBottom: 40, // Extra bottom padding for better spacing
+    paddingBottom: 100, // Extra bottom padding for keyboard
   },
   errorContainer: {
     backgroundColor: '#ffebee',
