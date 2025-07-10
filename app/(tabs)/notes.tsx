@@ -13,7 +13,7 @@ import {
   Clipboard,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Camera, Upload, FileText, Sparkles, Copy, Plus, X, Eye, Brain, CircleCheck as CheckCircle } from 'lucide-react-native';
+import { Camera, Upload, FileText, Sparkles, Copy, Plus, X, Eye, Brain, CheckCircle } from 'lucide-react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
@@ -29,24 +29,53 @@ interface NoteCard {
   data?: NoteAnalysis;
 }
 
+interface ActionOption {
+  id: 'textify' | 'summarize' | 'depth';
+  title: string;
+  description: string;
+  icon: any;
+  color: string;
+  enabled: boolean;
+}
+
 export default function NotePalScreen() {
   const [showCamera, setShowCamera] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [cards, setCards] = useState<NoteCard[]>([]);
-  const [loading, setLoading] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const [mainNote, setMainNote] = useState('');
+  const [textInput, setTextInput] = useState('');
 
-  // Get the digital text from cards for processing
-  const getDigitalText = (): string => {
-    const textifyCard = cards.find(card => card.type === 'textify');
-    return textifyCard?.data?.digitalText || '';
-  };
+  // Action selection state
+  const [selectedActions, setSelectedActions] = useState<Set<string>>(new Set(['textify']));
 
-  // Check if actions are enabled
-  const isTextifyEnabled = () => selectedImage !== null;
-  const isSummarizeEnabled = () => getDigitalText().length > 0;
-  const isDepthEnabled = () => getDigitalText().length > 0;
+  const actionOptions: ActionOption[] = [
+    {
+      id: 'textify',
+      title: 'Textify',
+      description: 'Convert handwritten notes to digital text',
+      icon: FileText,
+      color: '#f3e5f5',
+      enabled: selectedImage !== null || textInput.trim().length > 0,
+    },
+    {
+      id: 'summarize',
+      title: 'Summarize',
+      description: 'Create concise summary with key points',
+      icon: Sparkles,
+      color: '#fff3e0',
+      enabled: true,
+    },
+    {
+      id: 'depth',
+      title: 'Add Depth',
+      description: 'Provide deeper insights and analysis',
+      icon: Brain,
+      color: '#e8f5e8',
+      enabled: true,
+    },
+  ];
 
   const handleCameraPress = async () => {
     if (!permission?.granted) {
@@ -57,6 +86,33 @@ export default function NotePalScreen() {
       }
     }
     setShowCamera(true);
+  };
+
+  const takePicture = async (camera: any) => {
+    if (camera) {
+      try {
+        const photo = await camera.takePictureAsync({
+          quality: 0.7,
+          base64: false,
+        });
+        setSelectedImage(photo.uri);
+        setTextInput('');
+        // Add original image card
+        const originalCard: NoteCard = {
+          id: 'original',
+          type: 'original',
+          title: '📷 Original Note',
+          content: 'Image captured and ready for processing',
+          icon: '📷',
+          color: '#e3f2fd',
+          data: undefined
+        };
+        setCards([originalCard]);
+        setShowCamera(false);
+      } catch (error) {
+        Alert.alert('Error', 'Failed to take picture');
+      }
+    }
   };
 
   const handleImagePicker = async () => {
@@ -76,6 +132,7 @@ export default function NotePalScreen() {
 
     if (!result.canceled) {
       setSelectedImage(result.assets[0].uri);
+      setTextInput('');
       // Add original image card
       const originalCard: NoteCard = {
         id: 'original',
@@ -105,67 +162,127 @@ export default function NotePalScreen() {
     }
   };
 
-  const handleAction = async (action: 'textify' | 'summarize' | 'depth') => {
-    if (action === 'textify' && !selectedImage) {
-      Alert.alert('No Image', 'Please upload an image first');
+  const handleTextInput = (text: string) => {
+    setTextInput(text);
+    if (text.trim().length > 0) {
+      setSelectedImage(null);
+      // Add text input card
+      const textCard: NoteCard = {
+        id: 'text-input',
+        type: 'original',
+        title: '✍️ Text Input',
+        content: text,
+        icon: '✍️',
+        color: '#f0f8ff',
+        data: undefined
+      };
+      setCards([textCard]);
+    } else if (cards.length > 0 && cards[0].id === 'text-input') {
+      setCards([]);
+    }
+  };
+
+  const toggleAction = (actionId: string) => {
+    const newSelected = new Set(selectedActions);
+    if (newSelected.has(actionId)) {
+      newSelected.delete(actionId);
+    } else {
+      newSelected.add(actionId);
+    }
+    setSelectedActions(newSelected);
+  };
+
+  const handleProcessActions = async () => {
+    if (selectedActions.size === 0) {
+      Alert.alert('No Actions Selected', 'Please select at least one processing action');
       return;
     }
 
-    if ((action === 'summarize' || action === 'depth') && !getDigitalText()) {
-      Alert.alert('No Text', 'Please textify an image first');
+    if (!selectedImage && !textInput.trim()) {
+      Alert.alert('No Input', 'Please upload an image or enter text to process');
       return;
     }
 
-    setLoading(action);
+    setLoading(true);
     try {
-      const result = await processNote(
-        '', 
-        action, 
-        action === 'textify' ? selectedImage || undefined : undefined,
-        action !== 'textify' ? getDigitalText() : undefined
-      );
+      const actionsArray = Array.from(selectedActions);
+      const newCards: NoteCard[] = [];
 
-      // Create new card based on action
-      let newCard: NoteCard;
-      
-      if (action === 'textify') {
-        newCard = {
-          id: `textify-${Date.now()}`,
-          type: 'textify',
-          title: '✍️ Digital Text',
-          content: result.digitalText || '',
-          icon: '✍️',
-          color: '#f3e5f5',
-          data: result
-        };
-      } else if (action === 'summarize') {
-        newCard = {
-          id: `summarize-${Date.now()}`,
-          type: 'summarize',
-          title: '✨ Summary',
-          content: result.summary || '',
-          icon: '✨',
-          color: '#fff3e0',
-          data: result
-        };
-      } else {
-        newCard = {
-          id: `depth-${Date.now()}`,
-          type: 'depth',
-          title: '🧠 Deeper Dive',
-          content: result.deeperInsights || '',
-          icon: '🧠',
-          color: '#e8f5e8',
-          data: result
-        };
+      // Process each selected action
+      for (const action of actionsArray) {
+        const actionType = action as 'textify' | 'summarize' | 'depth';
+        
+        let result: NoteAnalysis;
+        
+        if (actionType === 'textify') {
+          // For textify, use image or text input
+          result = await processNote(
+            textInput || '', 
+            'textify', 
+            selectedImage || undefined,
+            undefined
+          );
+        } else {
+          // For summarize/depth, use existing digital text or text input
+          const existingText = getDigitalText() || textInput;
+          result = await processNote(
+            '', 
+            actionType, 
+            undefined,
+            existingText
+          );
+        }
+
+        // Create card based on action
+        let newCard: NoteCard;
+        
+        if (actionType === 'textify') {
+          newCard = {
+            id: `textify-${Date.now()}`,
+            type: 'textify',
+            title: '✍️ Digital Text',
+            content: result.digitalText || '',
+            icon: '✍️',
+            color: '#f3e5f5',
+            data: result
+          };
+        } else if (actionType === 'summarize') {
+          newCard = {
+            id: `summarize-${Date.now()}`,
+            type: 'summarize',
+            title: '✨ Summary',
+            content: result.summary || '',
+            icon: '✨',
+            color: '#fff3e0',
+            data: result
+          };
+        } else {
+          newCard = {
+            id: `depth-${Date.now()}`,
+            type: 'depth',
+            title: '🧠 Deeper Dive',
+            content: result.deeperInsights || '',
+            icon: '🧠',
+            color: '#e8f5e8',
+            data: result
+          };
+        }
+
+        newCards.push(newCard);
       }
 
-      setCards(prev => [...prev, newCard]);
+      setCards(prev => [...prev, ...newCards]);
     } catch (error) {
       Alert.alert('Processing Failed', 'Could not process your note. Please try again.');
     } finally {
-      setLoading(null);
+      setLoading(false);
     }
+  };
+
+  // Get the digital text from cards for processing
+  const getDigitalText = (): string => {
+    const textifyCard = cards.find(card => card.type === 'textify');
+    return textifyCard?.data?.digitalText || '';
   };
 
   const copyToClipboard = (text: string) => {
@@ -182,78 +299,73 @@ export default function NotePalScreen() {
     setCards(prev => prev.filter(card => card.id !== cardId));
   };
 
-  const renderActionBar = () => (
-    <View style={styles.actionBar}>
+  const renderActionSelector = () => (
+    <View style={styles.actionSelector}>
+      <Text style={styles.sectionTitle}>Select Processing Actions</Text>
+      <View style={styles.actionGrid}>
+        {actionOptions.map((option) => {
+          const isSelected = selectedActions.has(option.id);
+          const isEnabled = option.enabled;
+          const IconComponent = option.icon;
+          
+          return (
+            <TouchableOpacity
+              key={option.id}
+              style={[
+                styles.actionOption,
+                isSelected && styles.actionOptionSelected,
+                !isEnabled && styles.actionOptionDisabled,
+              ]}
+              onPress={() => isEnabled && toggleAction(option.id)}
+              disabled={!isEnabled}
+            >
+              <View style={styles.actionOptionHeader}>
+                <IconComponent 
+                  size={24} 
+                  color={isSelected ? '#4facfe' : (isEnabled ? '#666' : '#ccc')} 
+                />
+                {isSelected && (
+                  <CheckCircle size={16} color="#4facfe" style={styles.checkIcon} />
+                )}
+              </View>
+              <Text style={[
+                styles.actionOptionTitle,
+                isSelected && styles.actionOptionTitleSelected,
+                !isEnabled && styles.actionOptionTitleDisabled,
+              ]}>
+                {option.title}
+              </Text>
+              <Text style={[
+                styles.actionOptionDescription,
+                !isEnabled && styles.actionOptionDescriptionDisabled,
+              ]}>
+                {option.description}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+      
       <TouchableOpacity
-        style={[
-          styles.actionButton,
-          isTextifyEnabled() ? styles.actionButtonEnabled : styles.actionButtonDisabled,
-          loading === 'textify' && styles.actionButtonLoading
-        ]}
-        onPress={() => handleAction('textify')}
-        disabled={!isTextifyEnabled() || loading !== null}
+        style={[styles.processButton, loading && styles.processButtonDisabled]}
+        onPress={handleProcessActions}
+        disabled={loading || selectedActions.size === 0}
       >
-        {loading === 'textify' ? (
-          <ActivityIndicator size="small" color="white" />
-        ) : (
-          <>
-            <FileText size={20} color={isTextifyEnabled() ? 'white' : '#999'} />
-            <Text style={[
-              styles.actionButtonText,
-              { color: isTextifyEnabled() ? 'white' : '#999' }
-            ]}>
-              Textify
-            </Text>
-          </>
-        )}
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={[
-          styles.actionButton,
-          isSummarizeEnabled() ? styles.actionButtonEnabled : styles.actionButtonDisabled,
-          loading === 'summarize' && styles.actionButtonLoading
-        ]}
-        onPress={() => handleAction('summarize')}
-        disabled={!isSummarizeEnabled() || loading !== null}
-      >
-        {loading === 'summarize' ? (
-          <ActivityIndicator size="small" color="white" />
-        ) : (
-          <>
-            <Sparkles size={20} color={isSummarizeEnabled() ? 'white' : '#999'} />
-            <Text style={[
-              styles.actionButtonText,
-              { color: isSummarizeEnabled() ? 'white' : '#999' }
-            ]}>
-              Summarize
-            </Text>
-          </>
-        )}
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={[
-          styles.actionButton,
-          isDepthEnabled() ? styles.actionButtonEnabled : styles.actionButtonDisabled,
-          loading === 'depth' && styles.actionButtonLoading
-        ]}
-        onPress={() => handleAction('depth')}
-        disabled={!isDepthEnabled() || loading !== null}
-      >
-        {loading === 'depth' ? (
-          <ActivityIndicator size="small" color="white" />
-        ) : (
-          <>
-            <Brain size={20} color={isDepthEnabled() ? 'white' : '#999'} />
-            <Text style={[
-              styles.actionButtonText,
-              { color: isDepthEnabled() ? 'white' : '#999' }
-            ]}>
-              Add Depth
-            </Text>
-          </>
-        )}
+        <LinearGradient
+          colors={['#4facfe', '#00f2fe']}
+          style={styles.processGradient}
+        >
+          {loading ? (
+            <ActivityIndicator color="white" />
+          ) : (
+            <>
+              <Sparkles size={20} color="white" />
+              <Text style={styles.processButtonText}>
+                Process Selected ({selectedActions.size})
+              </Text>
+            </>
+          )}
+        </LinearGradient>
       </TouchableOpacity>
     </View>
   );
@@ -325,7 +437,10 @@ export default function NotePalScreen() {
               <Text style={styles.closeButtonText}>✕</Text>
             </TouchableOpacity>
             <View style={styles.cameraControls}>
-              <TouchableOpacity style={styles.captureButton}>
+              <TouchableOpacity 
+                style={styles.captureButton}
+                onPress={takePicture}
+              >
                 <View style={styles.captureButtonInner} />
               </TouchableOpacity>
             </View>
@@ -347,26 +462,44 @@ export default function NotePalScreen() {
       </LinearGradient>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Upload Section */}
-        {cards.length === 0 && (
-          <View style={styles.uploadSection}>
-            <Text style={styles.sectionTitle}>Start with your note</Text>
-            <View style={styles.uploadOptions}>
-              <TouchableOpacity style={styles.uploadButton} onPress={handleCameraPress}>
-                <Camera size={32} color="#4facfe" />
-                <Text style={styles.uploadButtonText}>Take Photo</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.uploadButton} onPress={handleImagePicker}>
-                <Upload size={32} color="#4facfe" />
-                <Text style={styles.uploadButtonText}>Upload Image</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.uploadButton} onPress={handleDocumentPicker}>
-                <FileText size={32} color="#4facfe" />
-                <Text style={styles.uploadButtonText}>Upload File</Text>
-              </TouchableOpacity>
-            </View>
+        {/* Input Section */}
+        <View style={styles.inputSection}>
+          <Text style={styles.sectionTitle}>Start with your note</Text>
+          
+          {/* Text Input Option */}
+          <View style={styles.textInputContainer}>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Type your notes here, or upload an image below..."
+              placeholderTextColor="#999"
+              value={textInput}
+              onChangeText={handleTextInput}
+              multiline
+              maxLength={2000}
+            />
           </View>
-        )}
+
+          <Text style={styles.orText}>OR</Text>
+
+          {/* Upload Options */}
+          <View style={styles.uploadOptions}>
+            <TouchableOpacity style={styles.uploadButton} onPress={handleCameraPress}>
+              <Camera size={32} color="#4facfe" />
+              <Text style={styles.uploadButtonText}>Take Photo</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.uploadButton} onPress={handleImagePicker}>
+              <Upload size={32} color="#4facfe" />
+              <Text style={styles.uploadButtonText}>Upload Image</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.uploadButton} onPress={handleDocumentPicker}>
+              <FileText size={32} color="#4facfe" />
+              <Text style={styles.uploadButtonText}>Upload File</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Action Selector - Show when we have input */}
+        {(selectedImage || textInput.trim().length > 0) && renderActionSelector()}
 
         {/* Cards Section */}
         {cards.length > 0 && (
@@ -407,16 +540,15 @@ export default function NotePalScreen() {
             onPress={() => {
               setCards([]);
               setSelectedImage(null);
+              setTextInput('');
               setMainNote('');
+              setSelectedActions(new Set(['textify']));
             }}
           >
             <Text style={styles.resetButtonText}>Start New Note</Text>
           </TouchableOpacity>
         )}
       </ScrollView>
-
-      {/* Action Bar */}
-      {cards.length > 0 && renderActionBar()}
     </SafeAreaView>
   );
 }
@@ -432,6 +564,7 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
+    alignItems: 'center',
   },
   headerIcon: {
     fontSize: 40,
@@ -451,7 +584,6 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 20,
-    paddingBottom: 100, // Space for action bar
   },
   sectionTitle: {
     fontSize: 20,
@@ -459,9 +591,33 @@ const styles = StyleSheet.create({
     color: '#1a1a1a',
     marginBottom: 16,
   },
-  uploadSection: {
-    alignItems: 'center',
-    paddingVertical: 40,
+  inputSection: {
+    marginBottom: 32,
+  },
+  textInputContainer: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+  },
+  textInput: {
+    fontSize: 16,
+    fontFamily: 'Inter-Regular',
+    color: '#1a1a1a',
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+  orText: {
+    textAlign: 'center',
+    fontSize: 16,
+    fontFamily: 'Inter-Medium',
+    color: '#666',
+    marginVertical: 16,
   },
   uploadOptions: {
     flexDirection: 'row',
@@ -486,6 +642,91 @@ const styles = StyleSheet.create({
     color: '#4facfe',
     marginTop: 8,
     textAlign: 'center',
+  },
+  actionSelector: {
+    marginBottom: 32,
+  },
+  actionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 20,
+  },
+  actionOption: {
+    flex: 1,
+    minWidth: '30%',
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 16,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  actionOptionSelected: {
+    borderColor: '#4facfe',
+    backgroundColor: '#f0f8ff',
+  },
+  actionOptionDisabled: {
+    opacity: 0.5,
+  },
+  actionOptionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  checkIcon: {
+    marginLeft: 8,
+  },
+  actionOptionTitle: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+    color: '#1a1a1a',
+    marginBottom: 4,
+  },
+  actionOptionTitleSelected: {
+    color: '#4facfe',
+  },
+  actionOptionTitleDisabled: {
+    color: '#ccc',
+  },
+  actionOptionDescription: {
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: '#666',
+    lineHeight: 16,
+  },
+  actionOptionDescriptionDisabled: {
+    color: '#ccc',
+  },
+  processButton: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+  },
+  processButtonDisabled: {
+    opacity: 0.6,
+  },
+  processGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    gap: 8,
+  },
+  processButtonText: {
+    color: 'white',
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 16,
   },
   cardsSection: {
     marginBottom: 20,
@@ -616,49 +857,6 @@ const styles = StyleSheet.create({
     color: 'white',
     fontFamily: 'Inter-SemiBold',
     fontSize: 16,
-  },
-  actionBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'white',
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    paddingBottom: 32,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-  },
-  actionButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderRadius: 12,
-    marginHorizontal: 4,
-    gap: 8,
-  },
-  actionButtonEnabled: {
-    backgroundColor: '#4facfe',
-  },
-  actionButtonDisabled: {
-    backgroundColor: '#f0f0f0',
-  },
-  actionButtonLoading: {
-    backgroundColor: '#4facfe',
-    opacity: 0.7,
-  },
-  actionButtonText: {
-    fontSize: 14,
-    fontFamily: 'Inter-SemiBold',
   },
   cameraContainer: {
     flex: 1,
