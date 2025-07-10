@@ -862,4 +862,3 @@ IMPORTANT: Return ONLY the JSON object, no other text or formatting.`;
     }
     throw new Error('Failed to process note. Please try again.');
   }
-}
