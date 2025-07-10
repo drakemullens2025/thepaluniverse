@@ -116,8 +116,8 @@ const styles = StyleSheet.create({
   // Header styles updated for a more compact design
   header: {
     paddingHorizontal: 32,
-    paddingTop: 60, // Reduced header padding
-    paddingBottom: 24, // Reduced bottom padding
+    paddingTop: 20, 
+    paddingBottom: 24,
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
     position: 'relative',
