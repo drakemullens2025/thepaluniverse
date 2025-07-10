@@ -497,7 +497,7 @@ CRITICAL: Return ONLY the JSON object with proper double quotes around all keys 
           temperature: 0.7, // Balanced creativity and accuracy for educational content
           topK: 1,
           topP: 1,
-          maxOutputTokens: 4096, // Increased to prevent truncation
+          maxOutputTokens: 8192, // Further increased to prevent truncation
           candidateCount: 1,
           stopSequences: [],
         }
@@ -538,6 +538,16 @@ CRITICAL: Return ONLY the JSON object with proper double quotes around all keys 
       // Clean the response text
       let cleanedText = responseText.trim();
       
+      // Check if response appears to be truncated
+      if (!cleanedText.endsWith('}') && !cleanedText.endsWith('"}')) {
+        console.warn('Response appears to be truncated:', cleanedText.slice(-100));
+        // Try to find the last complete JSON object
+        const lastBraceIndex = cleanedText.lastIndexOf('}');
+        if (lastBraceIndex > 0) {
+          cleanedText = cleanedText.substring(0, lastBraceIndex + 1);
+        }
+      }
+      
       // Remove markdown code blocks if present
       cleanedText = cleanedText.replace(/^```json\s*/i, '').replace(/\s*```$/i, '');
       cleanedText = cleanedText.replace(/^```\s*/i, '').replace(/\s*```$/i, '');
@@ -569,6 +579,16 @@ CRITICAL: Return ONLY the JSON object with proper double quotes around all keys 
         
         // Second attempt: fix common JSON formatting issues
         try {
+          // Handle truncated strings by closing them
+          if (jsonString.match(/:\s*"[^"]*$/)) {
+            jsonString = jsonString.replace(/:\s*"[^"]*$/, ': "Response truncated"');
+          }
+          
+          // Handle incomplete arrays
+          if (jsonString.match(/:\s*\[[^\]]*$/)) {
+            jsonString = jsonString.replace(/:\s*\[[^\]]*$/, ': []');
+          }
+          
           // Fix unquoted keys
           let fixedJson = jsonString.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":');
           
@@ -577,6 +597,11 @@ CRITICAL: Return ONLY the JSON object with proper double quotes around all keys 
           
           // Fix trailing commas
           fixedJson = fixedJson.replace(/,(\s*[}\]])/g, '$1');
+          
+          // Ensure the JSON ends properly
+          if (!fixedJson.endsWith('}')) {
+            fixedJson += '}';
+          }
           
           const result = JSON.parse(fixedJson);
           
@@ -588,6 +613,18 @@ CRITICAL: Return ONLY the JSON object with proper double quotes around all keys 
           
           return result;
         } catch (secondParseError) {
+          // Third attempt: Create a minimal valid response
+          console.log('All parsing attempts failed, creating fallback response');
+          return {
+            solution: "I apologize, but I encountered an issue processing your homework question. Please try again with a shorter question or break it into smaller parts.",
+            adaptedLevel: 120,
+            stepByStep: ["Please try submitting your question again"],
+            keyPoints: ["Response processing error occurred"],
+            writingStyle: "Simplified due to processing error"
+          };
+        }
+      }
+    };
           console.error('Failed to parse JSON even after fixing:', jsonString);
           console.error('Original parse error:', parseError);
           console.error('Second parse error:', secondParseError);
