@@ -12,8 +12,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Camera, Send, Upload } from 'lucide-react-native';
-import { CameraView, useCameraPermissions } from 'expo-camera';
+import { Camera, Send, Upload, RotateCcw } from 'lucide-react-native';
+import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 
 // --- Import your custom components and logic ---
@@ -32,6 +32,7 @@ export default function RoastaPalScreen() {
   const [showCamera, setShowCamera] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [facing, setFacing] = useState<CameraType>('back');
 
   // --- Handlers for App Logic ---
 
@@ -101,6 +102,10 @@ export default function RoastaPalScreen() {
     }
   };
 
+  const toggleCameraFacing = () => {
+    setFacing(current => (current === 'back' ? 'front' : 'back'));
+  };
+
   const clearImage = () => {
     setSelectedImage(null);
     if (input === 'Image selected for roasting') {
@@ -131,7 +136,7 @@ export default function RoastaPalScreen() {
   if (showCamera) {
     return (
       <View style={styles.cameraContainer}>
-        <CameraView style={styles.camera} facing="back" ref={(ref) => ref}>
+        <CameraView style={styles.camera} facing={facing}>
           <View style={styles.cameraOverlay}>
             <TouchableOpacity
               style={styles.closeButton}
@@ -139,10 +144,18 @@ export default function RoastaPalScreen() {
             >
               <Text style={styles.closeButtonText}>✕</Text>
             </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={styles.flipButton}
+              onPress={toggleCameraFacing}
+            >
+              <RotateCcw size={24} color="white" />
+            </TouchableOpacity>
+            
             <View style={styles.cameraControls}>
               <TouchableOpacity 
                 style={styles.captureButton}
-                onPress={() => takePicture}
+                onPress={takePicture}
               >
                 <View style={styles.captureButtonInner} />
               </TouchableOpacity>
@@ -448,6 +461,17 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 20,
     fontWeight: 'bold',
+  },
+  flipButton: {
+    position: 'absolute',
+    top: 60,
+    left: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   cameraControls: {
     position: 'absolute',
